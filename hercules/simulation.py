@@ -63,7 +63,7 @@ class KassConfig:
                 pitchMin = None,
                 pitchMax = None,
                 geometry = None,
-                locustVersion = None):
+                outPath = None):
                 #geometry = 'FreeSpaceGeometry_V00_00_04.xml',
                 #locustVersion ='v2.1.6'):
         
@@ -72,7 +72,9 @@ class KassConfig:
         # -> It is important that this stays at the top!
         # https://stackoverflow.com/questions/2521901/get-a-list-tuple-dict-of-the-arguments-passed-to-a-function
         self.__configDict = locals()
-        self.__configDict.pop('self', None) # remove 'self' from the dictionary
+         # remove 'self' and 'filename' from the dictionary
+        self.__configDict.pop('self', None)
+        self.__configDict.pop('filename', None)
         self.__addDefaults(filename)
         
         print(self.__configDict)
@@ -87,10 +89,10 @@ class KassConfig:
                         
     def __getMinMaxVal(self, expression, string):
         regex = expression+self.__matchAllRegex.pattern
-                + self.__sMax+self.__matchAllRegex.pattern
+            +self.__sMax+self.__matchAllRegex.pattern
         result = re.findall(regex, string)
         minVal = result[0][0]
-        maxVal = result[0][2]
+        maxVal = result[0][1]
         
         return minVal, maxVal
         
@@ -98,7 +100,7 @@ class KassConfig:
         
         regex = expression+self.__matchAllRegex.pattern
         result = re.findall(regex, string)
-        val = result[0][0]
+        val = result[0]
         
         return val
         
@@ -113,24 +115,11 @@ class KassConfig:
         
         for key in self.__expressionDictComplex:
             if self.__configDict[key] is None:
-                minVal, maxVal =(
+                minVal, maxVal =( 
                     self.__getMinMaxVal(self.__expressionDictComplex[key], xml))
-                    
                 self.__configDict[key] = minVal
                 self.__configDict[key[:-3]+'Max'] = maxVal
         
-        
-    def makeConfigFile(self, inPath, outPath):
-        
-        with open(inPath) as conf:
-            xml = conf.read()
-        
-        vals = self.__dict__
-        for key in vals:
-            xml=xml.replace(kassConfigDict[key], '"'+str(vals[key])+'"')
-            
-        with open(outPath, 'w') as newConf:
-            newConf.write(xml)
         
     
 def _getConfigFromFile(locustFile):
