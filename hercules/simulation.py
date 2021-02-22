@@ -62,7 +62,7 @@ class KassConfig:
                                'pitchMin': __sThetaVal }
     
     def __init__(self,
-                filename,
+                filename='../hexbug/Phase3/LocustKassElectrons.xml',
                 seedKass=None,
                 tMax = None,
                 xMin = None,
@@ -194,7 +194,7 @@ class LocustConfig:
     __sNoiseTemperature = 'noise-temperature'
     
     def __init__(self,
-                filename,
+                filename='../hexbug/Phase3/LocustPhase3Template.json',
                 nChannels=None,
                 eggFilename=None,
                 recordSize=None,
