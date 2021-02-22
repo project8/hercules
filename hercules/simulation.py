@@ -75,19 +75,19 @@ class KassConfig:
                 pitchMax = None,
                 geometry = None,
                 outPath = None):
-                #geometry = 'FreeSpaceGeometry_V00_00_04.xml',
-                #locustVersion ='v2.1.6'):
         
         # returns a dictionary with all defined local variables up to this point
         # dictionary does not change when more variables are declared later 
         # -> It is important that this stays at the top!
         # https://stackoverflow.com/questions/2521901/get-a-list-tuple-dict-of-the-arguments-passed-to-a-function
         self.__configDict = locals()
+        
          # remove 'self' and 'filename' from the dictionary
         self.__configDict.pop('self', None)
         self.__configDict.pop('filename', None)
         self.__xml = _getXmlFromFile(filename)
         self.__addDefaults()
+        self.__adjustPaths()
  
     def __addDefaults(self):
         
@@ -144,6 +144,16 @@ class KassConfig:
                         +'"'+str(self.__configDict[key])+'"'\
                         +self.__sMax\
                         +'"'+str(self.__configDict[key[:-3]+'Max'])+'"', string)
+        
+    def __prefix(self, key, value):
+        
+        self.__configDict[key] = value + self.__configDict[key].split('/')[-1]
+                                
+    def __adjustPaths(self):
+        
+        self.__prefix('geometry', '/tmp/hexbug/Phase3/Trap/')
+        self.__prefix('outPath', '/tmp/output/')
+        
                         
     def __replaceAll(self):
         
@@ -249,7 +259,8 @@ class LocustConfig:
             
     def __prefix(self, key0, key1, value):
         
-        self.__configDict[key0][key1] = value + self.__configDict[key0][key1]
+        self.__configDict[key0][key1] =(
+                        value + self.__configDict[key0][key1].split('/')[-1])
             
     def __finalize(self, templateConfig):
         
