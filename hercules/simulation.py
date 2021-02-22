@@ -19,7 +19,18 @@ def _getRandSeed():
              ((t & 0x000000ff) << 24)
              
     return seed
-    
+ 
+def _getJsonFromFile(locustFile):
+    with open(locustFile, 'r') as infile:
+        return json.load(infile)
+        
+def _getXmlFromFile(xmlFile):
+    with open(xmlFile) as conf:
+        return conf.read()
+
+def _writeXmlFile(outPath, xml):
+    with open(outPath, 'w') as newConf:
+        newConf.write(xml)   
     
 class KassConfig:
     
@@ -75,20 +86,16 @@ class KassConfig:
          # remove 'self' and 'filename' from the dictionary
         self.__configDict.pop('self', None)
         self.__configDict.pop('filename', None)
-        self.__addDefaults(filename)
-        
-        print(self.__configDict)
+        self.__xml = _getXmlFromFile(filename)
+        self.__addDefaults()
  
-    def __addDefaults(self, inPath):
+    def __addDefaults(self):
         
-        with open(inPath) as conf:
-            xml = conf.read()
-        
-        self.__addComplexDefaults(xml)
-        self.__addSimpleDefaults(xml)
+        self.__addComplexDefaults(self.__xml)
+        self.__addSimpleDefaults(self.__xml)
                         
     def __getMinMaxVal(self, expression, string):
-        regex = expression+self.__matchAllRegex.pattern
+        regex = expression+self.__matchAllRegex.pattern\
             +self.__sMax+self.__matchAllRegex.pattern
         result = re.findall(regex, string)
         minVal = result[0][0]
@@ -119,12 +126,41 @@ class KassConfig:
                     self.__getMinMaxVal(self.__expressionDictComplex[key], xml))
                 self.__configDict[key] = minVal
                 self.__configDict[key[:-3]+'Max'] = maxVal
+     
+    def __replaceSimple(self, key, string):
         
+        return re.sub(self.__expressionDictSimple[key]\
+                        +self.__matchAllRegex.pattern,
+                        self.__expressionDictSimple[key]\
+                        +'"'+str(self.__configDict[key])+'"', string)
         
+    def __replaceComplex(self, key, string):
+        
+        return re.sub(self.__expressionDictComplex[key]\
+                        +self.__matchAllRegex.pattern\
+                        +self.__sMax\
+                        +self.__matchAllRegex.pattern,
+                        self.__expressionDictComplex[key]\
+                        +'"'+str(self.__configDict[key])+'"'\
+                        +self.__sMax\
+                        +'"'+str(self.__configDict[key[:-3]+'Max'])+'"', string)
+                        
+    def __replaceAll(self):
+        
+        xml = self.__xml
+        for key in self.__expressionDictComplex:
+            xml = self.__replaceComplex(key, xml)
+            
+        for key in self.__expressionDictSimple:
+            xml = self.__replaceSimple(key, xml)
+            
+        return xml
     
-def _getConfigFromFile(locustFile):
-    with open(locustFile, 'r') as infile:
-        return json.load(infile)
+    def makeConfigFile(self, outPath):
+        
+        xml = self.__replaceAll()
+        _writeXmlFile(outPath, xml)
+        
 
 class LocustConfig:
     
@@ -158,7 +194,7 @@ class LocustConfig:
     __sNoiseTemperature = 'noise-temperature'
     
     def __init__(self,
-                templateConfig,
+                filename,
                 nChannels=None,
                 eggFilename=None,
                 recordSize=None,
@@ -201,6 +237,7 @@ class LocustConfig:
         self.__set(self.__sNoise, self.__sNoiseFloorPsd, noiseFloorPsd)
         self.__set(self.__sNoise, self.__sNoiseTemperature, noiseTemperature)
         
+        templateConfig = _getJsonFromFile(filename)
         self.__finalize(templateConfig)
         
     def __set(self, key0, key1, value):
