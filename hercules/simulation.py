@@ -7,6 +7,8 @@ Date: February 19, 2021
 """
 
 import time
+import json
+import re
 
 def _getRandSeed():
     
@@ -21,54 +23,103 @@ def _getRandSeed():
     
 class KassConfig:
     
-    __configDict = {'seedKass': '$SEED',
-                   'tMax': '$TMAX',
-                   'xMin': '$XMIN',
-                   'yMin': '$YMIN',
-                   'xMax': '$XMAX',
-                   'yMax': '$YMAX',
-                   'zMin': '$ZMIN',
-                   'zMax': '$ZMAX',
-                   'pitchMin': '$PITCHMIN',
-                   'pitchMax': '$PITCHMAX',
-                   'geometry': '$GEOMETRY',
-                   'outPath': '$OUTPATH' }
+    #https://www.regular-expressions.info/floatingpoint.html
+    __floatRegex = re.compile('"([-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)"') #not used
+    __intRegex = re.compile('"(\d+)"') #not used
+    __matchAllRegex = re.compile('"(.+?)"')
+    
+    __sSeed = '<external_define name="seed" value='
+    __sOutpath = '<external_define name="output_path" value='
+    __sGeometry = '<geometry>\n    <include name='
+    __sXVal = '<x_uniform value_min='
+    __sYVal = '<y_uniform value_min='
+    __sZVal = '<z_uniform value_min='
+    __sThetaVal = '<theta_uniform value_min='
+    __sTMax = '<ksterm_max_time name="term_max_time" time='
+    
+    
+    __sMax = ' value_max='
+    
+    __expressionDictSimple = {'seedKass': __sSeed,
+                               'tMax': __sTMax,
+                               'geometry': __sGeometry,
+                               'outPath': __sOutpath }
+                       
+    __expressionDictComplex = {'xMin': __sXVal,
+                               'yMin': __sYVal,
+                               'zMin': __sZVal,
+                               'pitchMin': __sThetaVal }
     
     def __init__(self,
-                    seedKass=None,
-                    tMax = None,
-                    xMin = None,
-                    xMax = None,
-                    yMin = None,
-                    yMax = None,
-                    zMin = None,
-                    zMax = None,
-                    pitchMin = None,
-                    pitchMax = None,
-                    geometry = 'FreeSpaceGeometry_V00_00_04.xml',
-                    locustVersion ='v2.1.6'):
+                filename,
+                seedKass=None,
+                tMax = None,
+                xMin = None,
+                xMax = None,
+                yMin = None,
+                yMax = None,
+                zMin = None,
+                zMax = None,
+                pitchMin = None,
+                pitchMax = None,
+                geometry = None,
+                locustVersion = None):
+                #geometry = 'FreeSpaceGeometry_V00_00_04.xml',
+                #locustVersion ='v2.1.6'):
         
-        self.__seedKass = seedKass
-        self.__tMax = tMax
-        self.__xMin = xMin
-        self.__xMax = xMax
-        self.__yMin = yMin
-        self.__yMax = yMax
-        self.__zMin = zMin
-        self.__zMax = zMax
-        self.__pitchMin = pitchMin
-        self.__pitchMax = pitchMax
-        self.__geometry = '/hexbug/Phase3/Trap/'+geometry
-        self.__outPath =  '/usr/local/p8/locust/'+ locustVersion +'/output'
+        # returns a dictionary with all defined local variables up to this point
+        # dictionary does not change when more variables are declared later 
+        # -> It is important that this stays at the top!
+        # https://stackoverflow.com/questions/2521901/get-a-list-tuple-dict-of-the-arguments-passed-to-a-function
+        self.__configDict = locals()
+        self.__configDict.pop('self', None) # remove 'self' from the dictionary
+        self.__addDefaults(filename)
+        
+        print(self.__configDict)
+ 
+    def __addDefaults(self, inPath):
+        
+        with open(inPath) as conf:
+            xml = conf.read()
+        
+        self.__addComplexDefaults(xml)
+        self.__addSimpleDefaults(xml)
+                        
+    def __getMinMaxVal(self, expression, string):
+        regex = expression+self.__matchAllRegex.pattern
+                + self.__sMax+self.__matchAllRegex.pattern
+        result = re.findall(regex, string)
+        minVal = result[0][0]
+        maxVal = result[0][2]
+        
+        return minVal, maxVal
+        
+    def __getVal(self, expression, string):
+        
+        regex = expression+self.__matchAllRegex.pattern
+        result = re.findall(regex, string)
+        val = result[0][0]
+        
+        return val
+        
+    def __addSimpleDefaults(self, xml):
+        
+        for key in self.__expressionDictSimple:
+            if self.__configDict[key] is None:
+                self.__configDict[key] =(
+                    self.__getVal(self.__expressionDictSimple[key], xml) )
+                
+    def __addComplexDefaults(self, xml):
+        
+        for key in self.__expressionDictComplex:
+            if self.__configDict[key] is None:
+                minVal, maxVal =(
+                    self.__getMinMaxVal(self.__expressionDictComplex[key], xml))
+                    
+                self.__configDict[key] = minVal
+                self.__configDict[key[:-3]+'Max'] = maxVal
         
         
-        self.__setRandomSeed()
-        
-    def __setRandomSeed(self):
-        
-        if not self.__seedKass:
-            self.seedKass = _getRandSeed()
-            
     def makeConfigFile(self, inPath, outPath):
         
         with open(inPath) as conf:
@@ -137,6 +188,7 @@ class LocustConfig:
                 noiseFloorPsd=None,
                 noiseTemperature=None):
         
+        #locals() hack not possible here since we need a nested dictionary
         self.__configDict = {}
         self.__configDict[self.__sGen] = [self.__sArray, self.__sFft, self.__sDec, self.__sDigit]
         self.__set(self.__sSim, self.__sNChannels, nChannels)
