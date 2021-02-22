@@ -89,6 +89,10 @@ class KassConfig:
         self.__addDefaults()
         self.__adjustPaths()
  
+    @property
+    def configDict(self):
+        return self.__configDict 
+    
     def __addDefaults(self):
         
         self.__addComplexDefaults(self.__xml)
@@ -249,7 +253,11 @@ class LocustConfig:
         
         templateConfig = _getJsonFromFile(filename)
         self.__finalize(templateConfig)
-        
+    
+    @property
+    def configDict(self):
+        return self.__configDict 
+    
     def __set(self, key0, key1, value):
         
         if value is not None:
@@ -309,106 +317,106 @@ class LocustConfig:
 class SimConfig:
     
     def __init__(self, 
-                    locustVersion,
-                    nChannels=None,
-                    noiseTemp=None,
-                    vRange = None,
-                    vOffset = None,
-                    eggPath = None,
-                    locustTemplate = None,
-                    kassTemplate = None,
-                    recordSize = None,
-                    loFrequency = None,
-                    elementsPerStrip = None,
-                    nSubarrays = None,
-                    zShift = None,
-                    elementSpacing = None,
-                    seedKass = None,
-                    seedLocust= None,
-                    tfReceiverBinWidth = None, 
-                    tfReceiverFilename = 'FiveSlotTF.txt',
-                    tMax=0.5e-4,
-                    xMin=0.0,
-                    xMax=0.0,
-                    yMin=0.0,
-                    yMax=0.0,
-                    zMin=0.0,
-                    zMax=0.0,
-                    pitchMin=90.0,
-                    pitchMax=90.0,
-                    geometry='FreeSpaceGeometry_V00_00_10.xml'):
+                kassTemplate='../hexbug/Phase3/LocustKassElectrons.xml',
+                seedKass=None,
+                tMax = None,
+                xMin = None,
+                xMax = None,
+                yMin = None,
+                yMax = None,
+                zMin = None,
+                zMax = None,
+                pitchMin = None,
+                pitchMax = None,
+                geometry = None,
+                outPath = None,
+                locustTemplate='../hexbug/Phase3/LocustPhase3Template.json',
+                nChannels=None,
+                eggFilename=None,
+                recordSize=None,
+                nRecords=None,
+                vRange=None,
+                loFrequency=None,
+                nElementsPerStrip=None,
+                nSubarrays=None,
+                zshiftArray=None,
+                arrayRadius=None,
+                elementSpacing=None,
+                tfReceiverBinWidth=None,
+                tfReceiverFilename=None,
+                xmlFilename=None,
+                seedLocust=None,
+                noiseFloorPsd=None,
+                noiseTemperature=None):
        
         
         
         #files
-        self.locustTemplate = locustTemplate
-        self.kassTemplate = kassTemplate
+        self.__locustTemplate = locustTemplate
+        self.__kassTemplate = kassTemplate
         
-        #noisePower = getNoisePower(snr)
-        self.locustConfig = LocustConfig(nChannels,
-                                        None, # noise-psd not used
-                                        noiseTemp,
-                                        vRange,
-                                        vOffset,
-                                        eggPath,
-                                        recordSize,
-                                        loFrequency,
-                                        elementsPerStrip,
-                                        nSubarrays,
-                                        zShift,
-                                        elementSpacing,
-                                        seedLocust,
-                                        tfReceiverBinWidth,
-                                        tfReceiverFilename)
+        self.__locustConfig = LocustConfig(filename=locustTemplate,
+                                            nChannels=nChannels,
+                                            eggFilename=eggFilename,
+                                            recordSize=recordSize,
+                                            nRecords=nRecords,
+                                            vRange=vRange,
+                                            loFrequency=loFrequency,
+                                            nElementsPerStrip=nElementsPerStrip,
+                                            nSubarrays=nSubarrays,
+                                            zshiftArray=zshiftArray,
+                                            arrayRadius=arrayRadius,
+                                            elementSpacing=elementSpacing,
+                                            tfReceiverBinWidth=tfReceiverBinWidth,
+                                            tfReceiverFilename=tfReceiverFilename,
+                                            xmlFilename=xmlFilename,
+                                            randomSeed=seedLocust,
+                                            noiseFloorPsd=noiseFloorPsd,
+                                            noiseTemperature=noiseTemperature)
                                         
-        self.kassConfig = KassConfig(seedKass,
-                                        tMax,
-                                        xMin,
-                                        xMax,
-                                        yMin,
-                                        yMax,
-                                        zMin,
-                                        zMax,
-                                        pitchMin,
-                                        pitchMax,
-                                        geometry,
-                                        locustVersion)
-                                        
-    def setXml(self, name):
-        self.locustConfig.xmlFile=name
-        
-    def setEgg(self, name):
-        self.locustConfig.eggPath=name
+        self.__kassConfig = KassConfig(filename = kassTemplate,
+                                        seedKass = seedKass,
+                                        tMax = tMax,
+                                        xMin = xMin,
+                                        xMax = xMax,
+                                        yMin = yMin,
+                                        yMax = yMax,
+                                        zMin = zMin,
+                                        zMax = zMax,
+                                        pitchMin = pitchMin,
+                                        pitchMax = pitchMax,
+                                        geometry = geometry,
+                                        outPath = outPath)
     
     def toJson(self, filename):
         
         with open(filename, 'w') as outfile:
-            json.dump(self.__dict__, outfile, indent=2, 
-                            default=lambda x: x.__dict__)
+            json.dump({'kassConfig': self.__kassConfig, 
+                        'locustConfig': self.__locustConfig}, outfile, indent=2, 
+                            default=lambda x: x.configDict)
+ 
                             
     def toDict(self):
         
-        return {**self.locustConfig.__dict__, **self.kassConfig.__dict__}
+        return {**self.__locustConfig.configDict, **self.__kassConfig.configDict}
             
     @classmethod
     def fromJson(cls, filename):
         
-        instance = cls(locustVersion='v2.1.6')
-        instance.locustConfig = LocustConfig()
-        instance.kassConfig = KassConfig()
+        instance = cls()
         
         with open(filename, 'r') as infile:
             config = json.load(infile)
-            instance.locustTemplate = config['locustTemplate']
-            instance.kassTemplate = config['kassTemplate']
-            instance.locustConfig.__dict__ = config['locustConfig']
-            instance.kassConfig.__dict__ = config['kassConfig']
+            
+            #accessing 'private' members; don't do that at home ;)
+            instance.__locustConfig._LocustConfig__configDict = config['locustConfig']
+            instance.__kassConfig._KassConfig__configDict = config['kassConfig']
             
         return instance
         
-    def makeConfig(self, filenamelocust, filenamekass):
-        self.locustConfig.makeLocustConfig(self.locustTemplate, filenamelocust)
-        self.kassConfig.makeKassConfig(self.kassTemplate, filenamekass)
+    def makeConfigFile(self, filenamelocust, filenamekass):
+        self.__locustConfig.makeConfigFile(filenamelocust)
+        self.__kassConfig.makeConfigFile(filenamekass)
 
 
 class KassLocustP3:
