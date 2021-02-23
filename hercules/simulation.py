@@ -10,6 +10,7 @@ import time
 import json
 import re
 from pathlib import Path
+import os
 
 _moduleDir = Path(__file__).parent.absolute()
 _hexbugDir = _moduleDir / 'hexbug'
@@ -77,8 +78,7 @@ class KassConfig:
                 zMax = None,
                 pitchMin = None,
                 pitchMax = None,
-                geometry = None,
-                outPath = None):
+                geometry = None):
         
         # returns a dictionary with all defined local variables up to this point
         # dictionary does not change when more variables are declared later 
@@ -90,6 +90,7 @@ class KassConfig:
         self.__configDict.pop('self', None)
         self.__configDict.pop('filename', None)
         self.__xml = _getXmlFromFile(filename)
+        self.__configDict['outPath'] = '/output/'
         self.__addDefaults()
         self.__adjustPaths()
  
@@ -159,8 +160,8 @@ class KassConfig:
                                 
     def __adjustPaths(self):
         
-        self.__prefix('geometry', '/tmp/hexbug/Phase3/Trap/')
-        self.__prefix('outPath', '/tmp/output/')
+        self.__prefix('geometry', '/hexbug/Phase3/Trap/')
+        #self.__prefix('outPath', '/output/')
         
                         
     def __replaceAll(self):
@@ -269,6 +270,11 @@ class LocustConfig:
                 self.__configDict[key0] = {}
             self.__configDict[key0][key1] = value
             
+    def setXml(self, xml):
+        
+        name = xml.split('/')[-1]
+        self.__set(self.__sArray, self.__sXmlFilename, '/output/'+name)
+            
     def __prefix(self, key0, key1, value):
         
         self.__configDict[key0][key1] =(
@@ -308,8 +314,8 @@ class LocustConfig:
                 
     def __adjustPaths(self):
         
-        self.__prefix(self.__sArray, self.__sXmlFilename, '/tmp/output/')
-        self.__prefix(self.__sSim, self.__sEggFilename, '/tmp/output/')
+        self.__prefix(self.__sArray, self.__sXmlFilename, '/output/')
+        self.__prefix(self.__sSim, self.__sEggFilename, '/output/')
         self.__prefix(self.__sArray, self.__sTfReceiverFilename, '/hexbug/Phase3/TransferFunctions/')
             
     def makeConfigFile(self, outPath):
@@ -333,7 +339,6 @@ class SimConfig:
                 pitchMin = None,
                 pitchMax = None,
                 geometry = None,
-                outPath = None,
                 locustTemplate=_hexbugDir/'Phase3'/'LocustPhase3Template.json',
                 nChannels=None,
                 eggFilename=None,
@@ -389,8 +394,7 @@ class SimConfig:
                                         zMax = zMax,
                                         pitchMin = pitchMin,
                                         pitchMax = pitchMax,
-                                        geometry = geometry,
-                                        outPath = outPath)
+                                        geometry = geometry)
     
     def toJson(self, filename):
         
@@ -419,12 +423,9 @@ class SimConfig:
         return instance
         
     def makeConfigFile(self, filenamelocust, filenamekass):
+        self.__locustConfig.setXml(filenamekass)
         self.__locustConfig.makeConfigFile(filenamelocust)
         self.__kassConfig.makeConfigFile(filenamekass)
-
-def getHexbug():
-    
-    return _hexbugDir
 
 class KassLocustP3:
     
@@ -433,70 +434,73 @@ class KassLocustP3:
                 locustversion='v2.1.2', 
                 p8computeversion='v0.10.1'):
                             
-        self.workingdir=workingdir+'/'
-        self.outputdir = self.workingdir+'output/'
-        self.locustversion=locustversion
-        self.p8computeversion=p8computeversion
-        self.p8locustdir='/usr/local/p8/locust/'+locustversion
-        self.p8computedir='/usr/local/p8/compute/'+p8computeversion
-        self.container=container
+        self.__workingdir=workingdir+'/'
+        
+        Path(self.__workingdir).mkdir(parents=True, exist_ok=True)
+        
+        #self.outputdir = self.workingdir+'output/'
+        self.__locustversion=locustversion
+        self.__p8computeversion=p8computeversion
+        self.__p8locustdir='/usr/local/p8/locust/'+locustversion
+        self.__p8computedir='/usr/local/p8/compute/'+p8computeversion
+        self.__container=container
         
         
         self._genCommandScript()
         
-    def __call__(self, config, filename):
+    def __call__(self, config, name):
         
         #try: # Locust
          #   output = call_locust(locust_config_path)
         #except subprocess.CalledProcessError as e:
         
-        filenamelocust = filename+'locust.json'
-        filenamekass = filename+'kass.xml'
-        config.setXml('/tmp/output/'+filenamekass)
-        config.setEgg(self.p8locustdir+'/output/'+filename+'.egg')
-        config.makeConfig(self.outputdir+filenamelocust, 
-                            self.outputdir+filenamekass)
-        config.toJson(self.outputdir+filename+'config.json')
+        outputdir = self.__workingdir + name
         
-        cmd = self._assembleCommand('/tmp/output/'+filename)
+        Path(outputdir).mkdir(parents=True, exist_ok=True)
+       # config.setXml('/tmp/output/'+filenamekass)
+       # config.setEgg(self.p8locustdir+'/output/'+filename+'.egg')
+        config.makeConfigFile(outputdir+'/LocustPhase3Template.json', outputdir+'/LocustKassElectrons.xml')
+        config.toJson(outputdir+'/SimConfig.json')
+        
+        cmd = self._assembleCommand(name)
         
         print(cmd)
         
         os.system(cmd)
         
-        deleteCmd = 'rm -f ' + self.outputdir+filenamelocust
-        deleteCmd += ' ' + self.outputdir+filenamekass
-        deleteCmd += ' ' + self.outputdir+'Phase3Seed*Output.root'
+        #deleteCmd = 'rm -f ' + outputdir+filenamelocust
+        #deleteCmd += ' ' + outputdir+filenamekass
+        #deleteCmd += ' ' + outputdir+'Phase3Seed*Output.root'
         
-        os.system(deleteCmd)
+        #os.system(deleteCmd)
 
         
-    def _assembleCommand(self, configFile):
+    def _assembleCommand(self, filename):
         cmd = 'docker run -it --rm -v '
-        cmd += self.workingdir
+        cmd += self.__workingdir
         cmd += ':/tmp -v '
-        cmd += self.workingdir
-        cmd += '/output:'
-        cmd += self.p8locustdir
+        cmd += self.__workingdir
+        cmd += filename
+        cmd += '/:'
+        cmd += self.__p8locustdir
         cmd += '/output -v '
-        cmd += self.hexbugdir
+        cmd += str(_hexbugDir)
         cmd += ':/hexbug '
-        cmd += self.container
-        cmd += ' /bin/bash -c "/tmp/locustcommands.sh '
-        cmd += configFile
-        cmd += 'locust.json"'
+        cmd += self.__container
+        cmd += ' /bin/bash -c "/tmp/locustcommands.sh /output/LocustPhase3Template.json"'
         
         return cmd
         
     def _genCommandScript(self):
         
         commands = '#!/bin/bash\n'
-        commands += 'source ' + self.p8computedir+'/setup.sh\n'
-        commands += 'source ' + self.p8locustdir+'/bin/kasperenv.sh\n'
+        commands += 'ln -s ' + self.__p8locustdir + '/output/ /output\n'
+        commands += 'source ' + self.__p8computedir+'/setup.sh\n'
+        commands += 'source ' + self.__p8locustdir+'/bin/kasperenv.sh\n'
         commands += 'LocustSim config=$1'
         
-        with open(self.workingdir+'locustcommands.sh', 'w') as outFile:
+        with open(self.__workingdir+'locustcommands.sh', 'w') as outFile:
             outFile.write(commands)
             
-        os.system('chmod +x '+self.workingdir+'locustcommands.sh')
+        os.system('chmod +x '+self.__workingdir+'locustcommands.sh')
         
