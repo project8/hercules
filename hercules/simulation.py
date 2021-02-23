@@ -9,6 +9,10 @@ Date: February 19, 2021
 import time
 import json
 import re
+from pathlib import Path
+
+_moduleDir = Path(__file__).parent.absolute()
+_hexbugDir = _moduleDir / 'hexbug'
 
 def _getRandSeed():
     
@@ -62,7 +66,7 @@ class KassConfig:
                                'pitchMin': __sThetaVal }
     
     def __init__(self,
-                filename='../hexbug/Phase3/LocustKassElectrons.xml',
+                filename=_hexbugDir/'Phase3'/'LocustKassElectrons.xml',
                 seedKass=None,
                 tMax = None,
                 xMin = None,
@@ -208,7 +212,7 @@ class LocustConfig:
     __sNoiseTemperature = 'noise-temperature'
     
     def __init__(self,
-                filename='../hexbug/Phase3/LocustPhase3Template.json',
+                filename = _hexbugDir/'Phase3'/'LocustPhase3Template.json',
                 nChannels=None,
                 eggFilename=None,
                 recordSize=None,
@@ -317,7 +321,7 @@ class LocustConfig:
 class SimConfig:
     
     def __init__(self, 
-                kassTemplate='../hexbug/Phase3/LocustKassElectrons.xml',
+                kassTemplate=_hexbugDir/'Phase3'/'LocustKassElectrons.xml',
                 seedKass=None,
                 tMax = None,
                 xMin = None,
@@ -330,7 +334,7 @@ class SimConfig:
                 pitchMax = None,
                 geometry = None,
                 outPath = None,
-                locustTemplate='../hexbug/Phase3/LocustPhase3Template.json',
+                locustTemplate=_hexbugDir/'Phase3'/'LocustPhase3Template.json',
                 nChannels=None,
                 eggFilename=None,
                 recordSize=None,
@@ -418,10 +422,13 @@ class SimConfig:
         self.__locustConfig.makeConfigFile(filenamelocust)
         self.__kassConfig.makeConfigFile(filenamekass)
 
+def getHexbug():
+    
+    return _hexbugDir
 
 class KassLocustP3:
     
-    def __init__(self, workingdir, hexbugdir,
+    def __init__(self, workingdir,
                 container='project8/p8compute',
                 locustversion='v2.1.2', 
                 p8computeversion='v0.10.1'):
@@ -433,11 +440,11 @@ class KassLocustP3:
         self.p8locustdir='/usr/local/p8/locust/'+locustversion
         self.p8computedir='/usr/local/p8/compute/'+p8computeversion
         self.container=container
-        self.hexbugdir=hexbugdir
+        
         
         self._genCommandScript()
         
-    def run(self, config, filename):
+    def __call__(self, config, filename):
         
         #try: # Locust
          #   output = call_locust(locust_config_path)
