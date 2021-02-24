@@ -1,9 +1,0 @@
-
-"""
-
-Author: F. Thomas
-Date: February 22, 2021
-
-"""
-
-recursive-include hexbug *
