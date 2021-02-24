@@ -61,3 +61,7 @@ class Configuration:
     @property
     def env():
         return self.__env
+        
+    @property
+    def container():
+        return self.__container
