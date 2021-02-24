@@ -9,8 +9,8 @@ Date: February 24, 2021
 import configparser
 from pathlib import Path
 
-_moduleDir = Path(__file__).parent.absolute()
-_configDir = _moduleDir/'settings'/'config.ini'
+_MODULEDIR = Path(__file__).parent.absolute()
+_CONFIGDIR = _MODULEDIR/'settings'/'config.ini'
 
 
 class Configuration:
@@ -20,7 +20,7 @@ class Configuration:
         print('Config created')
         
         config = configparser.ConfigParser()
-        config.read(_configDir)
+        config.read(_CONFIGDIR)
         
         self.__handleEnv()
         

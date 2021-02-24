@@ -14,17 +14,17 @@ from .configuration import Configuration
 import os
 import subprocess
 
-_moduleDir = Path(__file__).parent.absolute()
-_hexbugDir = _moduleDir / 'hexbug'
+_MODULEDIR = Path(__file__).parent.absolute()
+_HEXBUGDIR = _MODULEDIR / 'hexbug'
 #container is running linux
 #-> make sure it's PosixPath when run from windows
-_hexbugDirContainer = PosixPath('/') / 'tmp'
-_outputDirContainer = PosixPath('/') / 'home' 
-_LocustConfigName = 'LocustPhase3Template.json'
-_KassConfigName = 'LocustKassElectrons.xml'
-_SimConfigName = 'SimConfig.json'
+_HEXBUGDIRCONTAINER = PosixPath('/') / 'tmp'
+_OUTPUTDIRCONTAINER = PosixPath('/') / 'home' 
+_LOCUSTCONFIGNAME = 'LocustPhase3Template.json'
+_KASSCONFIGNAME = 'LocustKassElectrons.xml'
+_SIMCONFIGNAME = 'SimConfig.json'
 
-_config = Configuration()
+_CONFIG = Configuration()
 
 def _getRandSeed():
     
@@ -78,7 +78,7 @@ class KassConfig:
                                'pitchMin': __sThetaVal }
     
     def __init__(self,
-                filename=_hexbugDir/'Phase3'/_KassConfigName,
+                filename=_HEXBUGDIR/'Phase3'/_KASSCONFIGNAME,
                 seedKass=None,
                 tMax = None,
                 xMin = None,
@@ -101,7 +101,7 @@ class KassConfig:
         self.__configDict.pop('self', None)
         self.__configDict.pop('filename', None)
         self.__xml = _getXmlFromFile(filename)
-        self.__configDict['outPath'] = str(_outputDirContainer)
+        self.__configDict['outPath'] = str(_OUTPUTDIRCONTAINER)
         self.__addDefaults()
         self.__adjustPaths()
  
@@ -171,7 +171,7 @@ class KassConfig:
                                 
     def __adjustPaths(self):
         
-        self.__prefix('geometry', str(_hexbugDirContainer)+'/Phase3/Trap/')
+        self.__prefix('geometry', str(_HEXBUGDIRCONTAINER)+'/Phase3/Trap/')
         #self.__prefix('outPath', '/output/')
         
                         
@@ -224,7 +224,7 @@ class LocustConfig:
     __sNoiseTemperature = 'noise-temperature'
     
     def __init__(self,
-                filename = _hexbugDir/'Phase3'/_LocustConfigName,
+                filename = _HEXBUGDIR/'Phase3'/_LOCUSTCONFIGNAME,
                 nChannels=None,
                 eggFilename=None,
                 recordSize=None,
@@ -285,7 +285,7 @@ class LocustConfig:
         
         name = path.name
         self.__set(self.__sArray, self.__sXmlFilename, 
-                    str(_outputDirContainer / name))
+                    str(_OUTPUTDIRCONTAINER / name))
             
     def __prefix(self, key0, key1, value):
         
@@ -328,11 +328,11 @@ class LocustConfig:
     def __adjustPaths(self):
         
         self.__prefix(self.__sArray, self.__sXmlFilename, 
-                        str(_outputDirContainer) + '/')
+                        str(_OUTPUTDIRCONTAINER) + '/')
         self.__prefix(self.__sSim, self.__sEggFilename, 
-                        str(_outputDirContainer) + '/')
+                        str(_OUTPUTDIRCONTAINER) + '/')
         self.__prefix(self.__sArray, self.__sTfReceiverFilename, 
-                        str(_hexbugDirContainer)+'/Phase3/TransferFunctions/')
+                        str(_HEXBUGDIRCONTAINER)+'/Phase3/TransferFunctions/')
             
     def makeConfigFile(self, outPath):
         
@@ -343,7 +343,7 @@ class LocustConfig:
 class SimConfig:
     
     def __init__(self, 
-                kassTemplate=_hexbugDir/'Phase3'/_KassConfigName,
+                kassTemplate=_HEXBUGDIR/'Phase3'/_KASSCONFIGNAME,
                 seedKass=None,
                 tMax = None,
                 xMin = None,
@@ -355,7 +355,7 @@ class SimConfig:
                 pitchMin = None,
                 pitchMax = None,
                 geometry = None,
-                locustTemplate=_hexbugDir/'Phase3'/_LocustConfigName,
+                locustTemplate=_HEXBUGDIR/'Phase3'/_LOCUSTCONFIGNAME,
                 nChannels=None,
                 eggFilename=None,
                 recordSize=None,
@@ -471,11 +471,11 @@ class KassLocustP3:
     __commandScriptName = 'locustcommands.sh'
     
     #configuration parameters
-    __locustversion = _config.locustVersion
-    __p8computeversion = _config.p8computeversion
-    __container = _config.container
-    __p8locustdir = PosixPath(_config.locustPath) / _config.locustversion
-    __p8computedir = PosixPath(_config.p8computePath) / _config.p8computeversion
+    __locustversion = _CONFIG.locustVersion
+    __p8computeversion = _CONFIG.p8computeversion
+    __container = _CONFIG.container
+    __p8locustdir = PosixPath(_CONFIG.locustPath) / _CONFIG.locustversion
+    __p8computedir = PosixPath(_CONFIG.p8computePath) / _CONFIG.p8computeversion
     
     def __init__(self, workingdir):
                             
@@ -488,9 +488,9 @@ class KassLocustP3:
         outputdir = self.__workingdir / name
         outputdir.mkdir(parents=True, exist_ok=True)
         
-        locustFile = outputdir / _LocustConfigName
-        kassFile = outputdir / _KassConfigName
-        configDump = outputdir / _SimConfigName
+        locustFile = outputdir / _LOCUSTCONFIGNAME
+        kassFile = outputdir / _KASSCONFIGNAME
+        configDump = outputdir / _SIMCONFIGNAME
 
         config.makeConfigFile(locustFile, kassFile)
         config.toJson(configDump)
@@ -508,7 +508,7 @@ class KassLocustP3:
         bashCommand = ('"'
                        + str(self.__workingDirContainer/self.__commandScriptName)
                        + ' '
-                       + str(_outputDirContainer/_LocustConfigName)
+                       + str(_OUTPUTDIRCONTAINER/_LOCUSTCONFIGNAME)
                        + '"')
                        
         dockerCmd = '/bin/bash -c ' + bashCommand
@@ -517,9 +517,9 @@ class KassLocustP3:
                                             self.__workingDirContainer)
                            
         shareOutputDir = _genShareDirString(outputdir,
-                                            _outputDirContainer)
+                                            _OUTPUTDIRCONTAINER)
                                             
-        shareHexbugDir = _genShareDirString(_hexbugDir, _hexbugDirContainer)
+        shareHexbugDir = _genShareDirString(_HEXBUGDIR, _HEXBUGDIRCONTAINER)
         
         cmd = _charConcatenate(' ', dockerRun, shareWorkingDir, shareOutputDir, 
                                 shareHexbugDir, self.__container, dockerCmd)
@@ -545,14 +545,14 @@ class KassLocustP3:
         
 class KassLocustP3Cluster:
     
-    __p8computeSingularity = Path(_config.container)
+    __p8computeSingularity = Path(_CONFIG.container)
     __commandScriptName = 'locustcommands.sh'
     __jobScriptName = 'JOB.sh'
     
-   __locustversion =_config.locustVersion
-   __p8computeversion =_config.p8computeVersion
-   __p8locustdir = PosixPath(_config.locustPath) / _config.locustVersion
-   __p8computedir = PosixPath(_config.p8computePath) / _config.p8computeVersion
+   __locustversion =_CONFIG.locustVersion
+   __p8computeversion =_CONFIG.p8computeVersion
+   __p8locustdir = PosixPath(_CONFIG.locustPath) / _CONFIG.locustVersion
+   __p8computedir = PosixPath(_CONFIG.p8computePath) / _CONFIG.p8computeVersion
 
     def __init__(self, workingdir):
         
@@ -564,9 +564,9 @@ class KassLocustP3Cluster:
         outputdir = self.__workingdir / name
         outputdir.mkdir(parents=True, exist_ok=True)
         
-        locustFile = outputdir / _LocustConfigName
-        kassFile = outputdir / _KassConfigName
-        configDump = outputdir / _SimConfigName
+        locustFile = outputdir / _LOCUSTCONFIGNAME
+        kassFile = outputdir / _KASSCONFIGNAME
+        configDump = outputdir / _SIMCONFIGNAME
 
         config.makeConfigFile(locustFile, kassFile)
         config.toJson(configDump)
@@ -597,11 +597,11 @@ class KassLocustP3Cluster:
         
         singularityExec = 'singularity exec --no-home'
         shareOutputDir = _genShareDirStringSingularity(outputdir,
-                                                        _outputDirContainer)
-        shareHexbugDir = _genShareDirStringSingularity(_hexbugDir, 
-                                                        _hexbugDirContainer)
+                                                        _OUTPUTDIRCONTAINER)
+        shareHexbugDir = _genShareDirStringSingularity(_HEXBUGDIR, 
+                                                        _HEXBUGDIRCONTAINER)
         container = str(self.__p8computeSingularity)
-        runScript = str(_outputDirContainer/self.__commandScriptName)
+        runScript = str(_OUTPUTDIRCONTAINER/self.__commandScriptName)
         
         singularityCmd = _charConcatenate(' ', singularityExec, shareOutputDir, 
                                             shareHexbugDir, container, 
@@ -627,7 +627,7 @@ class KassLocustP3Cluster:
         kasperenv = _charConcatenate(' ', 'source',
                                  str(self.__p8locustdir/'bin'/'kasperenv.sh'))
         locust = ('exec LocustSim config='
-                  + str(_outputDirContainer/_LocustConfigName))
+                  + str(_OUTPUTDIRCONTAINER/_LOCUSTCONFIGNAME))
         
         commands = _charConcatenate('\n', shebang, p8env, kasperenv, locust)
         
