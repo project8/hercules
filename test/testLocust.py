@@ -20,4 +20,3 @@ config = SimConfig(nChannels=2, seedLocust=1, vRange=7.0,
 
 sim = KassLocustP3(str(moduleDir) + '/workingDir')
 sim(config, 'someDirName')
-
