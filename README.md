@@ -1,6 +1,11 @@
 # hercules
 Python package for scripting our simulation workflows
 
+## Requirements
+
+A python environment with version >= 3.7.7 (might also work with 3.5 but that is untested). Required python modules will be installed automatically.
+Running on a desktop requires [docker](https://www.docker.com/get-started).
+
 ## Installation
 
 First, adjust the environment setting in the [configuration](./hercules/settings/config.ini). On the Yale cluster you enter 'grace', while on a desktop (or laptop) you enter 'desktop' (both without quotes).
