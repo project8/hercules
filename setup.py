@@ -13,7 +13,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="hercules",
-    version="0.0.1",
+    version="0.1.0",
     author="Florian Thomas",
     author_email="fthomas@uni-mainz.de",
     description="https://github.com/project8/hercules",
