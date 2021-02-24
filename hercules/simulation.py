@@ -9,11 +9,19 @@ Date: February 19, 2021
 import time
 import json
 import re
-from pathlib import Path
+from pathlib import Path, PosixPath
 import os
+import subprocess
 
 _moduleDir = Path(__file__).parent.absolute()
 _hexbugDir = _moduleDir / 'hexbug'
+#container is running linux
+#-> make sure it's PosixPath when run from windows
+_hexbugDirContainer = PosixPath('/') / 'tmp'
+_outputDirContainer = PosixPath('/') / 'home' 
+_LocustConfigName = 'LocustPhase3Template.json'
+_KassConfigName = 'LocustKassElectrons.xml'
+_SimConfigName = 'SimConfig.json'
 
 def _getRandSeed():
     
@@ -67,7 +75,7 @@ class KassConfig:
                                'pitchMin': __sThetaVal }
     
     def __init__(self,
-                filename=_hexbugDir/'Phase3'/'LocustKassElectrons.xml',
+                filename=_hexbugDir/'Phase3'/_KassConfigName,
                 seedKass=None,
                 tMax = None,
                 xMin = None,
@@ -90,7 +98,7 @@ class KassConfig:
         self.__configDict.pop('self', None)
         self.__configDict.pop('filename', None)
         self.__xml = _getXmlFromFile(filename)
-        self.__configDict['outPath'] = '/output/'
+        self.__configDict['outPath'] = str(_outputDirContainer)
         self.__addDefaults()
         self.__adjustPaths()
  
@@ -160,7 +168,7 @@ class KassConfig:
                                 
     def __adjustPaths(self):
         
-        self.__prefix('geometry', '/hexbug/Phase3/Trap/')
+        self.__prefix('geometry', str(_hexbugDirContainer)+'/Phase3/Trap/')
         #self.__prefix('outPath', '/output/')
         
                         
@@ -213,7 +221,7 @@ class LocustConfig:
     __sNoiseTemperature = 'noise-temperature'
     
     def __init__(self,
-                filename = _hexbugDir/'Phase3'/'LocustPhase3Template.json',
+                filename = _hexbugDir/'Phase3'/_LocustConfigName,
                 nChannels=None,
                 eggFilename=None,
                 recordSize=None,
@@ -270,10 +278,11 @@ class LocustConfig:
                 self.__configDict[key0] = {}
             self.__configDict[key0][key1] = value
             
-    def setXml(self, xml):
+    def setXml(self, path):
         
-        name = xml.split('/')[-1]
-        self.__set(self.__sArray, self.__sXmlFilename, '/output/'+name)
+        name = path.name
+        self.__set(self.__sArray, self.__sXmlFilename, 
+                    str(_outputDirContainer / name))
             
     def __prefix(self, key0, key1, value):
         
@@ -284,7 +293,8 @@ class LocustConfig:
         
         self.__addDefaults(templateConfig)
         self.__handleNoise()
-        self.__set(self.__sDigit, self.__sVOffset, -self.__configDict[self.__sDigit][self.__sVRange]/2)
+        self.__set(self.__sDigit, self.__sVOffset, 
+                    -self.__configDict[self.__sDigit][self.__sVRange]/2)
         self.__adjustPaths()
         
     def __addDefaults(self, templateConfig):
@@ -314,9 +324,12 @@ class LocustConfig:
                 
     def __adjustPaths(self):
         
-        self.__prefix(self.__sArray, self.__sXmlFilename, '/output/')
-        self.__prefix(self.__sSim, self.__sEggFilename, '/output/')
-        self.__prefix(self.__sArray, self.__sTfReceiverFilename, '/hexbug/Phase3/TransferFunctions/')
+        self.__prefix(self.__sArray, self.__sXmlFilename, 
+                        str(_outputDirContainer) + '/')
+        self.__prefix(self.__sSim, self.__sEggFilename, 
+                        str(_outputDirContainer) + '/')
+        self.__prefix(self.__sArray, self.__sTfReceiverFilename, 
+                        str(_hexbugDirContainer)+'/Phase3/TransferFunctions/')
             
     def makeConfigFile(self, outPath):
         
@@ -327,7 +340,7 @@ class LocustConfig:
 class SimConfig:
     
     def __init__(self, 
-                kassTemplate=_hexbugDir/'Phase3'/'LocustKassElectrons.xml',
+                kassTemplate=_hexbugDir/'Phase3'/_KassConfigName,
                 seedKass=None,
                 tMax = None,
                 xMin = None,
@@ -339,7 +352,7 @@ class SimConfig:
                 pitchMin = None,
                 pitchMax = None,
                 geometry = None,
-                locustTemplate=_hexbugDir/'Phase3'/'LocustPhase3Template.json',
+                locustTemplate=_hexbugDir/'Phase3'/_LocustConfigName,
                 nChannels=None,
                 eggFilename=None,
                 recordSize=None,
@@ -416,7 +429,7 @@ class SimConfig:
         with open(filename, 'r') as infile:
             config = json.load(infile)
             
-            #accessing 'private' members; don't do that at home ;)
+            #accessing 'private' data members; don't do that at home! ;)
             instance.__locustConfig._LocustConfig__configDict = config['locustConfig']
             instance.__kassConfig._KassConfig__configDict = config['kassConfig']
             
@@ -427,22 +440,46 @@ class SimConfig:
         self.__locustConfig.makeConfigFile(filenamelocust)
         self.__kassConfig.makeConfigFile(filenamekass)
 
+def _genShareDirString(dirOutside, dirContainer):
+    
+    return ('-v '
+               + str(dirOutside)
+               + ':'
+               + str(dirContainer))
+               
+def _genShareDirStringSingularity(dirOutside, dirContainer):
+    
+    return ('--bind '
+               + str(dirOutside)
+               + ':'
+               + str(dirContainer))
+               
+def _charConcatenate(char, *strings):
+    
+    output = ''
+    for s in strings:
+        output += s + char
+        
+    return output[:-1] #no extra char at the end
+
 class KassLocustP3:
+    
+    __workingDirContainer = PosixPath('/') / 'workingdir'
+    __commandScriptName = 'locustcommands.sh'
     
     def __init__(self, workingdir,
                 container='project8/p8compute',
                 locustversion='v2.1.2', 
                 p8computeversion='v0.10.1'):
                             
-        self.__workingdir=workingdir+'/'
+        self.__workingdir=Path(workingdir)
         
-        Path(self.__workingdir).mkdir(parents=True, exist_ok=True)
+        self.__workingdir.mkdir(parents=True, exist_ok=True)
         
-        #self.outputdir = self.workingdir+'output/'
         self.__locustversion=locustversion
         self.__p8computeversion=p8computeversion
-        self.__p8locustdir='/usr/local/p8/locust/'+locustversion
-        self.__p8computedir='/usr/local/p8/compute/'+p8computeversion
+        self.__p8locustdir=PosixPath('/usr/local/p8/locust') / locustversion
+        self.__p8computedir=PosixPath('/usr/local/p8/compute') / p8computeversion
         self.__container=container
         
         
@@ -450,57 +487,164 @@ class KassLocustP3:
         
     def __call__(self, config, name):
         
-        #try: # Locust
-         #   output = call_locust(locust_config_path)
-        #except subprocess.CalledProcessError as e:
+        outputdir = self.__workingdir / name
+        outputdir.mkdir(parents=True, exist_ok=True)
         
-        outputdir = self.__workingdir + name
+        locustFile = outputdir / _LocustConfigName
+        kassFile = outputdir / _KassConfigName
+        configDump = outputdir / _SimConfigName
+
+        config.makeConfigFile(locustFile, kassFile)
+        config.toJson(configDump)
         
-        Path(outputdir).mkdir(parents=True, exist_ok=True)
-       # config.setXml('/tmp/output/'+filenamekass)
-       # config.setEgg(self.p8locustdir+'/output/'+filename+'.egg')
-        config.makeConfigFile(outputdir+'/LocustPhase3Template.json', outputdir+'/LocustKassElectrons.xml')
-        config.toJson(outputdir+'/SimConfig.json')
-        
-        cmd = self._assembleCommand(name)
+        cmd = self._assembleCommand(outputdir)
         
         print(cmd)
         
-        os.system(cmd)
+        subprocess.Popen(cmd, shell=True).wait()
         
         #deleteCmd = 'rm -f ' + outputdir+filenamelocust
         #deleteCmd += ' ' + outputdir+filenamekass
         #deleteCmd += ' ' + outputdir+'Phase3Seed*Output.root'
         
         #os.system(deleteCmd)
-
         
-    def _assembleCommand(self, filename):
-        cmd = 'docker run -it --rm -v '
-        cmd += self.__workingdir
-        cmd += ':/tmp -v '
-        cmd += self.__workingdir
-        cmd += filename
-        cmd += '/:'
-        cmd += self.__p8locustdir
-        cmd += '/output -v '
-        cmd += str(_hexbugDir)
-        cmd += ':/hexbug '
-        cmd += self.__container
-        cmd += ' /bin/bash -c "/tmp/locustcommands.sh /output/LocustPhase3Template.json"'
+    def _assembleCommand(self, outputdir):
+        
+        dockerRun = 'docker run -it --rm'
+        
+        bashCommand = ('"'
+                       + str(self.__workingDirContainer/self.__commandScriptName)
+                       + ' '
+                       + str(_outputDirContainer/_LocustConfigName)
+                       + '"')
+                       
+        dockerCmd = '/bin/bash -c ' + bashCommand
+        
+        shareWorkingDir = _genShareDirString(self.__workingdir, 
+                                            self.__workingDirContainer)
+                           
+        shareOutputDir = _genShareDirString(outputdir,
+                                            _outputDirContainer)
+                                            
+        shareHexbugDir = _genShareDirString(_hexbugDir, _hexbugDirContainer)
+        
+        cmd = _charConcatenate(' ', dockerRun, shareWorkingDir, shareOutputDir, 
+                                shareHexbugDir, self.__container, dockerCmd)
         
         return cmd
         
     def _genCommandScript(self):
         
-        commands = '#!/bin/bash\n'
-        commands += 'ln -s ' + self.__p8locustdir + '/output/ /output\n'
-        commands += 'source ' + self.__p8computedir+'/setup.sh\n'
-        commands += 'source ' + self.__p8locustdir+'/bin/kasperenv.sh\n'
-        commands += 'LocustSim config=$1'
+        shebang = '#!/bin/bash'
+        p8env = _charConcatenate(' ', 'source', 
+                                 str(self.__p8computedir/'setup.sh'))
+        kasperenv = _charConcatenate(' ', 'source',
+                                 str(self.__p8locustdir/'bin'/'kasperenv.sh'))
+        locust = 'LocustSim config=$1'
         
-        with open(self.__workingdir+'locustcommands.sh', 'w') as outFile:
+        commands = _charConcatenate('\n', shebang, p8env, kasperenv, locust)
+        
+        script = self.__workingdir/self.__commandScriptName
+        with open(script, 'w') as outFile:
             outFile.write(commands)
             
-        os.system('chmod +x '+self.__workingdir+'locustcommands.sh')
+        subprocess.Popen('chmod +x ' + str(script), shell=True).wait()
         
+class KassLocustP3Cluster:
+    
+    __p8computeSingularity = Path('/home/ps48/project/singularity_p8compute/p8compute_latest.sif')
+    __commandScriptName = 'locustcommands.sh'
+    __jobScriptName = 'JOB.sh'
+
+    def __init__(self, workingdir,
+                container='project8/p8compute',
+                locustversion='v2.1.2', 
+                p8computeversion='v0.10.1'):
+        
+        self.__workingdir=Path(workingdir)
+        self.__workingdir.mkdir(parents=True, exist_ok=True)
+        self.__locustversion=locustversion
+        self.__p8computeversion=p8computeversion
+        self.__p8locustdir=PosixPath('/usr/local/p8/locust') / locustversion
+        self.__p8computedir=PosixPath('/usr/local/p8/compute') / p8computeversion
+        self.__container=container
+        
+        
+    def __call__(self, config, name):
+        
+        outputdir = self.__workingdir / name
+        outputdir.mkdir(parents=True, exist_ok=True)
+        
+        locustFile = outputdir / 'LocustPhase3Template.json'
+        kassFile = outputdir / 'LocustKassElectrons.xml'
+        configDump = outputdir / 'SimConfig.json'
+
+        config.makeConfigFile(locustFile, kassFile)
+        config.toJson(configDump)
+        
+        self._genLocustScript(outputdir)
+        self._genJobScript(outputdir)
+        
+        subprocess.Popen('sbatch ' + str(outputdir/self.__jobScriptName), 
+                            shell=True).wait()
+        
+    def _genJobScript(self, outputdir):
+        
+        """
+        Based on https://github.com/project8/scripts/blob/master/YaleP8ComputeScripts/GeneratePhase3Sims.py
+        
+        """
+        
+        shebang = '#!/bin/bash'
+        jobName = '#SBATCH -J ' + outputdir.name
+        jobOutput = '#SBATCH -o ' + str(outputdir) + '/run_singularity.out'
+        jobError = '#SBATCH -e ' + str(outputdir) + '/run_singularity.err'
+        jobPartition = '#SBATCH -p scavenge'
+        jobTimeout = '#SBATCH -t 10:00:00'
+        jobCpus = '#SBATCH --cpus-per-task=2'
+        jobTasks = '#SBATCH --ntasks=1'
+        jobMem = '#SBATCH --mem-per-cpu=15000'
+        jobRequeue = '#SBATCH --requeue'
+        
+        singularityExec = 'singularity exec --no-home'
+        shareOutputDir = _genShareDirStringSingularity(outputdir,
+                                                        _outputDirContainer)
+        shareHexbugDir = _genShareDirStringSingularity(_hexbugDir, 
+                                                        _hexbugDirContainer)
+        container = str(self.__p8computeSingularity)
+        runScript = str(_outputDirContainer/self.__commandScriptName)
+        
+        singularityCmd = _charConcatenate(' ', singularityExec, shareOutputDir, 
+                                            shareHexbugDir, container, 
+                                            runScript)
+                                            
+        commands = _charConcatenate('\n', shebang, jobName, jobOutput, 
+                                    jobError, jobPartition, jobTimeout, 
+                                    jobCpus, jobTasks, jobMem, jobRequeue,
+                                    singularityCmd)
+        
+        script = outputdir/self.__jobScriptName 
+        
+        with open(script, 'w') as outFile:
+            outFile.write(commands)
+            
+        subprocess.Popen('chmod +x '+str(script), shell=True).wait()
+    
+    def _genLocustScript(self, outputdir):   
+        
+        shebang = '#!/bin/bash'
+        p8env = _charConcatenate(' ', 'source', 
+                                 str(self.__p8computedir/'setup.sh'))
+        kasperenv = _charConcatenate(' ', 'source',
+                                 str(self.__p8locustdir/'bin'/'kasperenv.sh'))
+        locust = ('exec LocustSim config='
+                  + str(_outputDirContainer/_LocustConfigName))
+        
+        commands = _charConcatenate('\n', shebang, p8env, kasperenv, locust)
+        
+        script = outputdir / self.__commandScriptName
+        with open(script, 'w') as outFile:
+            outFile.write(commands)
+            
+        subprocess.Popen('chmod +x '+str(script), shell=True).wait()
