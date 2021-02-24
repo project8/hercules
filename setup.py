@@ -21,7 +21,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/project8/hercules",
     packages=setuptools.find_packages(),
-    package_data={'hercules': ['hexbug/**/**/*', 'hexbug/**/*']},
+    package_data={'hercules': ['hexbug/**/**/*', 'hexbug/**/*', 'settings/*']},
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
