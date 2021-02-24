@@ -6,7 +6,7 @@ Date: February 22, 2021
 
 """
 
-from hercules.simulation import SimConfig, KassLocustP3
+from hercules.simulation import SimConfig, KassLocustP3Desktop
 from pathlib import Path
 
 moduleDir = Path(__file__).parent.absolute()
@@ -18,6 +18,6 @@ config = SimConfig(nChannels=2, seedLocust=1, vRange=7.0,
                     geometry='FreeSpaceGeometry_V00_00_10.xml')
 
 
-sim = KassLocustP3(str(moduleDir) + '/workingDir')
+sim = KassLocustP3Desktop(str(moduleDir) + '/workingDir')
 sim(config, 'someDirName')
 

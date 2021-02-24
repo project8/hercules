@@ -13,6 +13,7 @@ from pathlib import Path, PosixPath
 from .configuration import Configuration
 import os
 import subprocess
+from abc import ABC, abstractmethod
 
 _MODULEDIR = Path(__file__).parent.absolute()
 _HEXBUGDIR = _MODULEDIR / 'hexbug'
@@ -464,28 +465,36 @@ def _charConcatenate(char, *strings):
         output += s + char
         
     return output[:-1] #no extra char at the end
+    
+class AbstractKassLocustP3(ABC):
+        
+    #configuration parameters
+    _p8locustDir = PosixPath(_CONFIG.locustPath) / _CONFIG.locustVersion
+    _p8computeDir = PosixPath(_CONFIG.p8computePath) / _CONFIG.p8computeVersion
+        
+    def __init__(self, workingDir):
+            
+        self._workingDir=Path(workingDir)
+        self._workingDir.mkdir(parents=True, exist_ok=True)
+        
+    @abstractmethod
+    def __call__(self, config, name):
+        pass
 
-class KassLocustP3:
+class KassLocustP3Desktop(AbstractKassLocustP3):
     
     __workingDirContainer = PosixPath('/') / 'workingdir'
     __commandScriptName = 'locustcommands.sh'
-    
-    #configuration parameters
-    __locustversion = _CONFIG.locustVersion
-    __p8computeversion = _CONFIG.p8computeVersion
     __container = _CONFIG.container
-    __p8locustdir = PosixPath(_CONFIG.locustPath) / _CONFIG.locustVersion
-    __p8computedir = PosixPath(_CONFIG.p8computePath) / _CONFIG.p8computeVersion
     
-    def __init__(self, workingdir):
+    def __init__(self, workingDir):
                             
-        self.__workingdir=Path(workingdir)
-        self.__workingdir.mkdir(parents=True, exist_ok=True)
+        AbstractKassLocustP3.__init__(self, workingDir)
         self._genCommandScript()
         
     def __call__(self, config, name):
         
-        outputdir = self.__workingdir / name
+        outputdir = self._workingDir / name
         outputdir.mkdir(parents=True, exist_ok=True)
         
         locustFile = outputdir / _LOCUSTCONFIGNAME
@@ -513,7 +522,7 @@ class KassLocustP3:
                        
         dockerCmd = '/bin/bash -c ' + bashCommand
         
-        shareWorkingDir = _genShareDirString(self.__workingdir, 
+        shareWorkingDir = _genShareDirString(self._workingDir, 
                                             self.__workingDirContainer)
                            
         shareOutputDir = _genShareDirString(outputdir,
@@ -530,38 +539,32 @@ class KassLocustP3:
         
         shebang = '#!/bin/bash'
         p8env = _charConcatenate(' ', 'source', 
-                                 str(self.__p8computedir/'setup.sh'))
+                                 str(self._p8computeDir/'setup.sh'))
         kasperenv = _charConcatenate(' ', 'source',
-                                 str(self.__p8locustdir/'bin'/'kasperenv.sh'))
+                                 str(self._p8locustDir/'bin'/'kasperenv.sh'))
         locust = 'LocustSim config=$1'
         
         commands = _charConcatenate('\n', shebang, p8env, kasperenv, locust)
         
-        script = self.__workingdir/self.__commandScriptName
+        script = self._workingDir/self.__commandScriptName
         with open(script, 'w') as outFile:
             outFile.write(commands)
             
         subprocess.Popen('chmod +x ' + str(script), shell=True).wait()
         
-class KassLocustP3Cluster:
+class KassLocustP3Cluster(AbstractKassLocustP3):
     
     __p8computeSingularity = Path(_CONFIG.container)
     __commandScriptName = 'locustcommands.sh'
     __jobScriptName = 'JOB.sh'
-    
-    __locustversion =_CONFIG.locustVersion
-    __p8computeversion =_CONFIG.p8computeVersion
-    __p8locustdir = PosixPath(_CONFIG.locustPath) / _CONFIG.locustVersion
-    __p8computedir = PosixPath(_CONFIG.p8computePath) / _CONFIG.p8computeVersion
 
-    def __init__(self, workingdir):
-        
-        self.__workingdir=Path(workingdir)
-        self.__workingdir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, workingDir):
+            
+        AbstractKassLocustP3.__init__(self, workingDir)
         
     def __call__(self, config, name):
         
-        outputdir = self.__workingdir / name
+        outputdir = self._workingDir / name
         outputdir.mkdir(parents=True, exist_ok=True)
         
         locustFile = outputdir / _LOCUSTCONFIGNAME
@@ -623,9 +626,9 @@ class KassLocustP3Cluster:
         
         shebang = '#!/bin/bash'
         p8env = _charConcatenate(' ', 'source', 
-                                 str(self.__p8computedir/'setup.sh'))
+                                 str(self._p8computeDir/'setup.sh'))
         kasperenv = _charConcatenate(' ', 'source',
-                                 str(self.__p8locustdir/'bin'/'kasperenv.sh'))
+                                 str(self._p8locustDir/'bin'/'kasperenv.sh'))
         locust = ('exec LocustSim config='
                   + str(_OUTPUTDIRCONTAINER/_LOCUSTCONFIGNAME))
         
