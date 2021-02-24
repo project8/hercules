@@ -472,7 +472,11 @@ class AbstractKassLocustP3(ABC):
     _p8locustDir = PosixPath(_CONFIG.locustPath) / _CONFIG.locustVersion
     _p8computeDir = PosixPath(_CONFIG.p8computePath) / _CONFIG.p8computeVersion
         
-    def __init__(self, workingDir):
+    def __init__(self, workingDir, direct=True):
+            
+        #prevents direct instantiation without using the factory
+        if direct:
+            raise ValueError('Direct instantiation forbidden')
             
         self._workingDir=Path(workingDir)
         self._workingDir.mkdir(parents=True, exist_ok=True)
@@ -480,6 +484,16 @@ class AbstractKassLocustP3(ABC):
     @abstractmethod
     def __call__(self, config, name):
         pass
+        
+    @staticmethod
+    def factory(name, workingDir):
+            
+        if name == 'grace':
+            return KassLocustP3Cluster(workingDir, direct=False)
+        elif name == 'desktop':
+            return KassLocustP3Desktop(workingDir, direct=False)
+        else:
+            raise ValueError('Bad KassLocustP3 creation : ' + name)
 
 class KassLocustP3Desktop(AbstractKassLocustP3):
     
@@ -487,9 +501,9 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
     __commandScriptName = 'locustcommands.sh'
     __container = _CONFIG.container
     
-    def __init__(self, workingDir):
+    def __init__(self, workingDir, direct=True):
                             
-        AbstractKassLocustP3.__init__(self, workingDir)
+        AbstractKassLocustP3.__init__(self, workingDir, direct)
         self._genCommandScript()
         
     def __call__(self, config, name):
@@ -558,9 +572,9 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
     __commandScriptName = 'locustcommands.sh'
     __jobScriptName = 'JOB.sh'
 
-    def __init__(self, workingDir):
+    def __init__(self, workingDir, direct=True):
             
-        AbstractKassLocustP3.__init__(self, workingDir)
+        AbstractKassLocustP3.__init__(self, workingDir, direct)
         
     def __call__(self, config, name):
         
@@ -639,3 +653,13 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
             outFile.write(commands)
             
         subprocess.Popen('chmod +x '+str(script), shell=True).wait()
+
+class KassLocustP3:
+
+    def __init__(self, workingDir):
+        self.__kassLocust = AbstractKassLocustP3.factory(_CONFIG.env, 
+                                                          workingDir)
+
+    def __call__(self, config, name):
+        return self.__kassLocust(config, name)
+    
