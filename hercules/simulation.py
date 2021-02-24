@@ -456,19 +456,15 @@ class KassLocustP3:
         
     def __call__(self, config, name):
         
-        #try: # Locust
-         #   output = call_locust(locust_config_path)
-        #except subprocess.CalledProcessError as e:
-        
         outputdir = self.__workingdir / name
-        
-        print(outputdir)
-        
         outputdir.mkdir(parents=True, exist_ok=True)
-       # config.setXml('/tmp/output/'+filenamekass)
-       # config.setEgg(self.p8locustdir+'/output/'+filename+'.egg')
-        config.makeConfigFile(outputdir/'LocustPhase3Template.json', outputdir/'LocustKassElectrons.xml')
-        config.toJson(outputdir/'SimConfig.json')
+        
+        locustFile = outputdir / 'LocustPhase3Template.json'
+        kassFile = outputdir / 'LocustKassElectrons.xml'
+        configDump = outputdir / 'SimConfig.json'
+
+        config.makeConfigFile(locustFile, kassFile)
+        config.toJson(configDump)
         
         cmd = self._assembleCommand(name)
         
@@ -512,46 +508,48 @@ class KassLocustP3:
             
         os.system('chmod +x '+str(self.__workingdir)+'/locustcommands.sh')
         
-class KassLocustCluster:
+class KassLocustP3Cluster:
     
+    __p8computeSingularity = Path('/home/ps48/project/singularity_p8compute/p8compute_latest.sif')
+
     def __init__(self, workingdir,
                 container='project8/p8compute',
                 locustversion='v2.1.2', 
                 p8computeversion='v0.10.1'):
-                            
-        self.__workingdir=workingdir+'/'
         
-        Path(self.__workingdir).mkdir(parents=True, exist_ok=True)
+        print(workingdir)
+        self.__workingdir=Path(workingdir)
+        
+        print(self.__workingdir)
+        
+        self.__workingdir.mkdir(parents=True, exist_ok=True)
         
         #self.outputdir = self.workingdir+'output/'
         self.__locustversion=locustversion
         self.__p8computeversion=p8computeversion
-        self.__p8locustdir='/usr/local/p8/locust/'+locustversion
-        self.__p8computedir='/usr/local/p8/compute/'+p8computeversion
+        self.__p8locustdir=PosixPath('/usr/local/p8/locust') / locustversion
+        self.__p8computedir=PosixPath('/usr/local/p8/compute') / p8computeversion
         self.__container=container
         
         
-        self._genCommandScript()
+        #self._genCommandScript()
         
     def __call__(self, config, name):
         
-        #try: # Locust
-         #   output = call_locust(locust_config_path)
-        #except subprocess.CalledProcessError as e:
+        outputdir = self.__workingdir / name
+        outputdir.mkdir(parents=True, exist_ok=True)
         
-        outputdir = self.__workingdir + name
+        locustFile = outputdir / 'LocustPhase3Template.json'
+        kassFile = outputdir / 'LocustKassElectrons.xml'
+        configDump = outputdir / 'SimConfig.json'
+
+        config.makeConfigFile(locustFile, kassFile)
+        config.toJson(configDump)
         
-        Path(outputdir).mkdir(parents=True, exist_ok=True)
-       # config.setXml('/tmp/output/'+filenamekass)
-       # config.setEgg(self.p8locustdir+'/output/'+filename+'.egg')
-        config.makeConfigFile(outputdir+'/LocustPhase3Template.json', outputdir+'/LocustKassElectrons.xml')
-        config.toJson(outputdir+'/SimConfig.json')
+        self._genLocustScript(outputdir)
+        self._genJobScript(outputdir)
         
-        cmd = self._assembleCommand(name)
-        
-        print(cmd)
-        
-        os.system(cmd)
+        #os.system(cmd)
         
         #deleteCmd = 'rm -f ' + outputdir+filenamelocust
         #deleteCmd += ' ' + outputdir+filenamekass
@@ -560,32 +558,64 @@ class KassLocustCluster:
         #os.system(deleteCmd)
 
         
-    def _assembleCommand(self, filename):
-        cmd = 'docker run -it --rm -v '
-        cmd += self.__workingdir
-        cmd += ':/tmp -v '
-        cmd += self.__workingdir
-        cmd += filename
-        cmd += '/:'
-        cmd += self.__p8locustdir
-        cmd += '/output -v '
-        cmd += str(_hexbugDir)
-        cmd += ':/hexbug '
-        cmd += self.__container
-        cmd += ' /bin/bash -c "/tmp/locustcommands.sh /output/LocustPhase3Template.json"'
+    # ~ def _assembleCommand(self, filename):
+        # ~ cmd = 'docker run -it --rm -v '
+        # ~ cmd += str(self.__workingdir)
+        # ~ cmd += ':/tmp -v '
+        # ~ cmd += str(self.__workingdir)
+        # ~ cmd += '/' + filename
+        # ~ cmd += '/:'
+        # ~ cmd += str(self.__p8locustdir)
+        # ~ cmd += '/output -v '
+        # ~ cmd += str(_hexbugDir)
+        # ~ cmd += ':/hexbug '
+        # ~ cmd += self.__container
+        # ~ cmd += ' /bin/bash -c "/tmp/locustcommands.sh /output/LocustPhase3Template.json"'
         
-        return cmd
+        # ~ return cmd
         
-    def _genCommandScript(self):
+    def _genJobScript(self, outputdir):
         
         commands = '#!/bin/bash\n'
-        commands += 'ln -s ' + self.__p8locustdir + '/output/ /output\n'
-        commands += 'source ' + self.__p8computedir+'/setup.sh\n'
-        commands += 'source ' + self.__p8locustdir+'/bin/kasperenv.sh\n'
-        commands += 'LocustSim config=$1'
+        commands += '#SBATCH -J ' + outputdir.name + '\n'
+        commands += '#SBATCH -o ' + str(outputdir) + '/run_singularity.out\n'
+        commands += '#SBATCH -e ' + str(outputdir) + '/run_singularity.err\n'
+        commands += '#SBATCH -p scavenge\n'
+        commands += '#SBATCH -t 10:00:00\n'
+        commands += '#SBATCH --cpus-per-task=2\n'
+        commands += '#SBATCH --ntasks=1\n'
+        commands += '#SBATCH --mem-per-cpu=15000\n'
+        commands += '#SBATCH --requeue\n'
         
-        with open(self.__workingdir+'locustcommands.sh', 'w') as outFile:
+        commands += 'date>locuststarttime.txt\n'
+        commands += 'singularity exec --no-home --bind '
+        commands += str(outputdir)
+        commands += ':/tmp,'
+        commands += str(outputdir)
+        commands += ':'
+        commands += str(self.__p8locustdir)
+        commands += ' ' 
+        commands += str(self.__p8computeSingularity)
+        commands += ' '
+        commands += './locustcommands.sh'
+        
+        script = outputdir / 'JOB.sh'
+        
+        with open(script, 'w') as outFile:
             outFile.write(commands)
             
-        os.system('chmod +x '+self.__workingdir+'locustcommands.sh')
+        os.system('chmod +x '+str(script))
+    
+    def _genLocustScript(self, outputdir):   
         
+        commands = '#!/bin/bash\n'
+        commands += 'ln -s ' + str(self.__p8locustdir) + '/output/ /output\n'
+        commands += 'source ' + str(self.__p8computedir) + '/setup.sh\n'
+        commands += 'source ' + str(self.__p8locustdir) + '/bin/kasperenv.sh\n'
+        commands += 'exec LocustSim config=/output/LocustPhase3Template.json'
+        
+        script = outputdir / 'locustcommands.sh'
+        with open(script, 'w') as outFile:
+            outFile.write(commands)
+            
+        os.system('chmod +x '+str(script))
