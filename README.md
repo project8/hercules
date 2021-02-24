@@ -3,23 +3,32 @@ Python package for scripting our simulation workflows
 
 ## Installation
 
-Run `pip install -e .` in the directory with setup.py.
+First, adjust the environment setting in the [configuration](./hercules/settings/config.ini). On the Yale cluster you enter 'grace', while on a desktop (or laptop) you enter 'desktop' (both without quotes).
+```
+[USER]
+#possible values are 'desktop', 'grace'
+ENVIRONMENT = grace
+```
 
-## Usage plan
+Second, run `pip install .` in the directory with setup.py. That's all.
 
-The package should provide the user a simple interface to run simulations. A user can clone the package, install it to their python environment with pip and use it with simple scripts that run anywhere. The following is not implemented yet, but should give an idea of how this should work.
+## Usage
+
+Example script:
 
 ```python
 
-from hercules import SimConfig, Locust
+from hercules.simulation import SimConfig, KassLocustP3
 
-workingdir='/home/flthomas/Project8/simulations'
+#just an example
+config = SimConfig(nChannels=2, seedLocust=1, vRange=7.0,
+                    eggFilename='someFileName.egg', seedKass =12534, xMin=-0.1e-5, 
+                    xMax=0.1e-5, tMax=0.5e-6,
+                    geometry='FreeSpaceGeometry_V00_00_10.xml')
 
-#modify the default config
-conf = SimConfig(nChannels=60, xMin=0.02, xMax=0.02, tMax=0.00015, recordSize=41000)
 
-#run Locust in container/on cluster
-locustWrapper = Locust(workingdir)
-locustWrapper(conf, 'r002_60_channels') #submit a job
+sim = KassLocustP3('/path/to/your/workingDir')
+sim(config, 'yourSimulationName')
 
 ```
+The example above runs a single Kassiopeia-Locust simulation with the given parameters. The full list of available parameters can be found at (documentation missing). If omitted, the seeds are generated based on the current time. Apart from the seeds, omitted parameters take on default values. The default configuration is determined by the files in the [hexbug](https://github.com/project8/hexbug/tree/459dffe30eea7d8bab9ddff78b63fda5198041ad) repo. Transfer functions and trap geometries from hexbug can be passed by their names only as demonstrated above. The script above is agnostic about the location of the hexbug repository hercules will find it on its own. Once hercules is installed you can run the script from anywhere specifying any working directory that you want. Additionally, the same script works in a desktop environment as well as on the cluster without modification. 
