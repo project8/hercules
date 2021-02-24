@@ -10,6 +10,7 @@ import time
 import json
 import re
 from pathlib import Path, PosixPath
+from .configuration import Configuration
 import os
 import subprocess
 
@@ -22,6 +23,8 @@ _outputDirContainer = PosixPath('/') / 'home'
 _LocustConfigName = 'LocustPhase3Template.json'
 _KassConfigName = 'LocustKassElectrons.xml'
 _SimConfigName = 'SimConfig.json'
+
+_config = Configuration()
 
 def _getRandSeed():
     
@@ -467,22 +470,17 @@ class KassLocustP3:
     __workingDirContainer = PosixPath('/') / 'workingdir'
     __commandScriptName = 'locustcommands.sh'
     
-    def __init__(self, workingdir,
-                container='project8/p8compute',
-                locustversion='v2.1.2', 
-                p8computeversion='v0.10.1'):
+    #configuration parameters
+    __locustversion = _config.locustVersion
+    __p8computeversion = _config.p8computeversion
+    __container = _config.container
+    __p8locustdir = PosixPath(_config.locustPath) / _config.locustversion
+    __p8computedir = PosixPath(_config.p8computePath) / _config.p8computeversion
+    
+    def __init__(self, workingdir):
                             
         self.__workingdir=Path(workingdir)
-        
         self.__workingdir.mkdir(parents=True, exist_ok=True)
-        
-        self.__locustversion=locustversion
-        self.__p8computeversion=p8computeversion
-        self.__p8locustdir=PosixPath('/usr/local/p8/locust') / locustversion
-        self.__p8computedir=PosixPath('/usr/local/p8/compute') / p8computeversion
-        self.__container=container
-        
-        
         self._genCommandScript()
         
     def __call__(self, config, name):
@@ -502,12 +500,6 @@ class KassLocustP3:
         print(cmd)
         
         subprocess.Popen(cmd, shell=True).wait()
-        
-        #deleteCmd = 'rm -f ' + outputdir+filenamelocust
-        #deleteCmd += ' ' + outputdir+filenamekass
-        #deleteCmd += ' ' + outputdir+'Phase3Seed*Output.root'
-        
-        #os.system(deleteCmd)
         
     def _assembleCommand(self, outputdir):
         
@@ -553,32 +545,28 @@ class KassLocustP3:
         
 class KassLocustP3Cluster:
     
-    __p8computeSingularity = Path('/home/ps48/project/singularity_p8compute/p8compute_latest.sif')
+    __p8computeSingularity = Path(_config.container)
     __commandScriptName = 'locustcommands.sh'
     __jobScriptName = 'JOB.sh'
+    
+   __locustversion =_config.locustVersion
+   __p8computeversion =_config.p8computeVersion
+   __p8locustdir = PosixPath(_config.locustPath) / _config.locustVersion
+   __p8computedir = PosixPath(_config.p8computePath) / _config.p8computeVersion
 
-    def __init__(self, workingdir,
-                container='project8/p8compute',
-                locustversion='v2.1.2', 
-                p8computeversion='v0.10.1'):
+    def __init__(self, workingdir):
         
         self.__workingdir=Path(workingdir)
         self.__workingdir.mkdir(parents=True, exist_ok=True)
-        self.__locustversion=locustversion
-        self.__p8computeversion=p8computeversion
-        self.__p8locustdir=PosixPath('/usr/local/p8/locust') / locustversion
-        self.__p8computedir=PosixPath('/usr/local/p8/compute') / p8computeversion
-        self.__container=container
-        
         
     def __call__(self, config, name):
         
         outputdir = self.__workingdir / name
         outputdir.mkdir(parents=True, exist_ok=True)
         
-        locustFile = outputdir / 'LocustPhase3Template.json'
-        kassFile = outputdir / 'LocustKassElectrons.xml'
-        configDump = outputdir / 'SimConfig.json'
+        locustFile = outputdir / _LocustConfigName
+        kassFile = outputdir / _KassConfigName
+        configDump = outputdir / _SimConfigName
 
         config.makeConfigFile(locustFile, kassFile)
         config.toJson(configDump)
