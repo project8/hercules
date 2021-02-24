@@ -17,19 +17,17 @@ class Configuration:
     
     def __init__(self):
         
-        print('Config created')
-        
         config = configparser.ConfigParser()
         config.read(_CONFIGDIR)
         
-        self.__handleEnv()
+        self.__handleEnv(config)
         
         self.__locustVersion = config['PACKAGE']['LOCUSTVERSION']
         self.__locustPath = config['PACKAGE']['LOCUSTPATH']
         self.__p8computeVersion = config['PACKAGE']['P8COMPUTEVERSION']
         self.__p8computePath = config['PACKAGE']['P8COMPUTEPATH']
                               
-    def __handleEnv(self):
+    def __handleEnv(self, config):
         
         self.__env = config['USER']['ENVIRONMENT']
         
@@ -39,29 +37,29 @@ class Configuration:
             self.__container = config['GRACE']['CONTAINER']
         else:
             raise ValueError((self.__env 
-                              + ' is not a valid environment setting.
+                              + ' is not a valid environment setting.'
                               + ' Check settings/config.ini'))
     
     @property
-    def locustVersion():
+    def locustVersion(self):
         return self.__locustVersion
         
     @property
-    def locustPath():
+    def locustPath(self):
         return self.__locustPath
 
     @property
-    def p8computeVersion():
+    def p8computeVersion(self):
         return self.__p8computeVersion
         
     @property
-    def p8computePath():
+    def p8computePath(self):
         return self.__p8computePath
         
     @property
-    def env():
+    def env(self):
         return self.__env
         
     @property
-    def container():
+    def container(self):
         return self.__container

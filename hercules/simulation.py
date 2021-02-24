@@ -472,10 +472,10 @@ class KassLocustP3:
     
     #configuration parameters
     __locustversion = _CONFIG.locustVersion
-    __p8computeversion = _CONFIG.p8computeversion
+    __p8computeversion = _CONFIG.p8computeVersion
     __container = _CONFIG.container
-    __p8locustdir = PosixPath(_CONFIG.locustPath) / _CONFIG.locustversion
-    __p8computedir = PosixPath(_CONFIG.p8computePath) / _CONFIG.p8computeversion
+    __p8locustdir = PosixPath(_CONFIG.locustPath) / _CONFIG.locustVersion
+    __p8computedir = PosixPath(_CONFIG.p8computePath) / _CONFIG.p8computeVersion
     
     def __init__(self, workingdir):
                             
@@ -549,10 +549,10 @@ class KassLocustP3Cluster:
     __commandScriptName = 'locustcommands.sh'
     __jobScriptName = 'JOB.sh'
     
-   __locustversion =_CONFIG.locustVersion
-   __p8computeversion =_CONFIG.p8computeVersion
-   __p8locustdir = PosixPath(_CONFIG.locustPath) / _CONFIG.locustVersion
-   __p8computedir = PosixPath(_CONFIG.p8computePath) / _CONFIG.p8computeVersion
+    __locustversion =_CONFIG.locustVersion
+    __p8computeversion =_CONFIG.p8computeVersion
+    __p8locustdir = PosixPath(_CONFIG.locustPath) / _CONFIG.locustVersion
+    __p8computedir = PosixPath(_CONFIG.p8computePath) / _CONFIG.p8computeVersion
 
     def __init__(self, workingdir):
         
