@@ -11,11 +11,14 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+with open("requirements.txt", "r") as f:
+    required = f.read().splitlines()
+
 setuptools.setup(
     name="hercules",
     version="0.1.0",
-    author="Florian Thomas",
-    author_email="fthomas@uni-mainz.de",
+    author="Florian Thomas, Mingyu (Charles) Li",
+    author_email="fthomas@uni-mainz.de, mingyli@mit.edu",
     description="https://github.com/project8/hercules",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -27,4 +30,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.5',
+    install_requires=required
 )
