@@ -18,7 +18,7 @@ setuptools.setup(
     name="hercules",
     version="0.1.0",
     author="Florian Thomas, Mingyu (Charles) Li",
-    author_email="fthomas@uni-mainz.de, mingyli@mit.edu",
+    author_email="fthomas@uni-mainz.de, mingyuli@mit.edu",
     description="https://github.com/project8/hercules",
     long_description=long_description,
     long_description_content_type="text/markdown",
