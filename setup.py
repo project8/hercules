@@ -1,4 +1,3 @@
-
 """
 
 Author: F. Thomas
@@ -11,8 +10,11 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r") as f:
-    required = f.read().splitlines()
+required = [
+    "h5py",
+    "numpy",
+    "scipy",
+]
 
 setuptools.setup(
     name="hercules",
@@ -30,5 +32,4 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.5',
-    install_requires=required
-)
+    install_requires=required)
