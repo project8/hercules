@@ -17,6 +17,8 @@ ENVIRONMENT = grace
 
 Second, run `pip install .` in the directory with setup.py. That's all.
 
+Note: run `pip install --editable .` for an editable install (deprecated practice).
+
 ## Usage
 
 Example script:
