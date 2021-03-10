@@ -6,7 +6,8 @@ Date: February 22, 2021
 
 """
 
-from hercules.simulation import SimConfig, KassLocustP3
+from hercules.simulation import KassLocustP3
+from hercules.simconfig import SimConfig
 from pathlib import Path
 
 module_dir = Path(__file__).parent.absolute()

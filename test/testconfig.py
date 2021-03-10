@@ -6,7 +6,7 @@ Date: February 22, 2021
 
 """
 
-from hercules.simulation import SimConfig
+from hercules.simconfig import SimConfig
 from pathlib import Path
 
 module_dir = Path(__file__).parent.absolute()
