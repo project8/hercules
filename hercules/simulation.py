@@ -177,11 +177,11 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         job_name = '#SBATCH -J ' + output_dir.name
         job_output = '#SBATCH -o ' + str(output_dir) + '/run_singularity.out'
         job_error = '#SBATCH -e ' + str(output_dir) + '/run_singularity.err'
-        job_partition = '#SBATCH -p scavenge'
-        job_timeout = '#SBATCH -t 10:00:00'
+        job_partition = '#SBATCH -p ' + CONFIG.partition
+        job_timeout = '#SBATCH -t ' + CONFIG.job_timelimit
         job_cpus = '#SBATCH --cpus-per-task=2'
         job_tasks = '#SBATCH --ntasks=1'
-        job_mem = '#SBATCH --mem-per-cpu=15000'
+        job_mem = '#SBATCH --mem-per-cpu=' + CONFIG.job_memory
         job_requeue = '#SBATCH --requeue'
         
         singularity_exec = 'singularity exec --no-home'
