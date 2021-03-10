@@ -97,18 +97,27 @@ class KassConfig:
         # -> It is important that this stays at the top!
         # https://stackoverflow.com/questions/2521901/get-a-list-tuple-dict-of-the-arguments-passed-to-a-function
         self._config_dict = locals()
+        self._clean_initial_config()
         
-         # remove 'self' and 'file_name' from the dictionary
-        self._config_dict.pop('self', None)
-        self._config_dict.pop('file_name', None)
-        self._xml = _get_xml_from_file(file_name)
+        self._handle_seed()
         self._config_dict['output_path'] = str(_OUTPUT_DIR_CONTAINER)
+        
+        self._xml = _get_xml_from_file(file_name)
         self._add_defaults()
         self._adjust_paths()
  
     @property
     def config_dict(self):
         return self._config_dict 
+        
+    def _clean_initial_config(self):
+        # remove 'self' and 'file_name' from the dictionary
+        self._config_dict.pop('self', None)
+        self._config_dict.pop('file_name', None)
+        
+    def _handle_seed(self):
+        if not self._config_dict['seed_kass']:
+            self._config_dict['seed_kass'] = _get_rand_seed()
     
     def _add_defaults(self):
         
@@ -173,7 +182,6 @@ class KassConfig:
     def _adjust_paths(self):
         
         self._prefix('geometry', str(_HEXBUG_DIR_CONTAINER)+'/Phase3/Trap/')
-        #self.__prefix('outPath', '/output/')
         
                         
     def _replace_all(self):
