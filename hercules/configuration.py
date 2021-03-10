@@ -20,46 +20,46 @@ class Configuration:
         config = configparser.ConfigParser()
         config.read(_CONFIGDIR)
         
-        self.__handleEnv(config)
+        self._handle_env(config)
         
-        self.__locustVersion = config['PACKAGE']['LOCUSTVERSION']
-        self.__locustPath = config['PACKAGE']['LOCUSTPATH']
-        self.__p8computeVersion = config['PACKAGE']['P8COMPUTEVERSION']
-        self.__p8computePath = config['PACKAGE']['P8COMPUTEPATH']
+        self._locust_version = config['PACKAGE']['LOCUSTVERSION']
+        self._locust_path = config['PACKAGE']['LOCUSTPATH']
+        self._p8compute_version = config['PACKAGE']['P8COMPUTEVERSION']
+        self._p8compute_path = config['PACKAGE']['P8COMPUTEPATH']
                               
-    def __handleEnv(self, config):
+    def _handle_env(self, config):
         
-        self.__env = config['USER']['ENVIRONMENT']
+        self._env = config['USER']['ENVIRONMENT']
         
-        if self.__env == 'desktop':
-            self.__container = config['DESKTOP']['CONTAINER']
-        elif self.__env == 'grace':
-            self.__container = config['GRACE']['CONTAINER']
+        if self._env == 'desktop':
+            self._container = config['DESKTOP']['CONTAINER']
+        elif self._env == 'grace':
+            self._container = config['GRACE']['CONTAINER']
         else:
-            raise ValueError((self.__env 
+            raise ValueError((self._env 
                               + ' is not a valid environment setting.'
                               + ' Check settings/config.ini'))
     
     @property
-    def locustVersion(self):
-        return self.__locustVersion
+    def locust_version(self):
+        return self._locust_version
         
     @property
-    def locustPath(self):
-        return self.__locustPath
+    def locust_path(self):
+        return self._locust_path
 
     @property
-    def p8computeVersion(self):
-        return self.__p8computeVersion
+    def p8compute_version(self):
+        return self._p8compute_version
         
     @property
-    def p8computePath(self):
-        return self.__p8computePath
+    def p8compute_path(self):
+        return self._p8compute_path
         
     @property
     def env(self):
-        return self.__env
+        return self._env
         
     @property
     def container(self):
-        return self.__container
+        return self._container
