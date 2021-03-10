@@ -6,6 +6,8 @@ Date: February 22, 2021
 
 """
 
+__all__ = ['LocustP3File']
+
 import numpy as np
 import h5py
 from scipy.fft import fft, fftshift, fftfreq

@@ -5,6 +5,9 @@ Author: F. Thomas
 Date: March 10, 2021
 
 """
+
+__all__ = []
+
 from pathlib import Path, PosixPath
 
 from .configuration import Configuration

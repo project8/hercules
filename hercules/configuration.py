@@ -6,6 +6,8 @@ Date: February 24, 2021
 
 """
 
+__all__ = []
+
 import configparser
 from pathlib import Path
 

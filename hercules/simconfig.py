@@ -6,6 +6,8 @@ Date: March 10, 2021
 
 """
 
+__all__ = ['SimConfig']
+
 import time
 import json
 import re

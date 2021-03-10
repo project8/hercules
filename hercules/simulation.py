@@ -6,6 +6,8 @@ Date: February 19, 2021
 
 """
 
+__all__ = ['KassLocustP3']
+
 from pathlib import Path, PosixPath
 import subprocess
 from abc import ABC, abstractmethod
