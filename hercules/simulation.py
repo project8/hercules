@@ -41,6 +41,48 @@ def _char_concatenate(char, *strings):
         
     return output[:-1] #no extra char at the end
     
+def _next_path(path_pattern):
+    """
+
+    https://stackoverflow.com/questions/17984809/how-do-i-create-an-incrementing-filename-in-python
+    Finds the next free path in an sequentially named list of files
+
+    e.g. path_pattern = 'file-%s.txt':
+
+    file-1.txt
+    file-2.txt
+    file-3.txt
+
+    Runs in log(n) time where n is the number of existing files in sequence
+    """
+    i = 1
+
+    # First do an exponential search
+    while Path(path_pattern % i).is_file():
+        i = i * 2
+
+    # Result lies somewhere in the interval (i/2..i]
+    # We call this interval (a..b] and narrow it down until a + 1 = b
+    a, b = (i // 2, i)
+    while a + 1 < b:
+        c = (a + b) // 2 # interval midpoint
+        a, b = (c, b) if Path(path_pattern % c).is_file() else (a, c)
+
+    return Path(path_pattern % b)
+
+def _create_file_race_condition_free(path_pattern):
+    created = False
+    while not created:
+        try:
+            path = _next_path(path_pattern)
+            with open(path, 'x'):
+                created = True
+        except FileExistsError:
+            pass
+            
+    return path
+
+    
 class AbstractKassLocustP3(ABC):
         
     #configuration parameters
@@ -136,7 +178,6 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
                                             
         share_hexbug_dir = _gen_shared_dir_string(HEXBUG_DIR, HEXBUG_DIR_CONTAINER)
         
-       # log = '>' + str(output_dir) + '/log.out'
         
         cmd = _char_concatenate(' ', docker_run, share_working_dir, 
                                     share_output_dir, share_hexbug_dir, 
@@ -165,13 +206,15 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
     
     _singularity = Path(CONFIG.container)
     _command_script_name = 'locustcommands.sh'
-    _job_script_name = 'joblist.txt'
+    _job_script_name = 'joblist%s.txt'
 
     def __init__(self, working_dir, direct=True):
             
         AbstractKassLocustP3.__init__(self, working_dir, direct)
         
     def __call__(self, config_list):
+        
+        self._joblist = _create_file_race_condition_free(str(self._working_dir/self._job_script_name))
         
         for config in config_list:
             self._add_job(config)
@@ -188,16 +231,18 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         subprocess.Popen('module load dSQ', shell=True).wait()
         
         dsq = 'dsq --requeue --cpus-per-task=2 --submit'
-        job_file = '--job-file ' + str(self._working_dir/self._job_script_name)
+        job_file = '--job-file ' + str(self._joblist)
         job_partition = '-p ' + CONFIG.partition
         job_limit = '--max-jobs ' + CONFIG.job_limit
         job_memory = '--mem-per-cpu ' + CONFIG.job_memory +'m'
         job_timelimit = '-t ' + CONFIG.job_timelimit
+        job_status = '--status-dir ' + str(self._working_dir)
+        job_output = '--output /dev/null'
         
         cmd = _char_concatenate(' ', dsq, job_file, job_partition, job_limit,
-                                job_memory, job_timelimit)
+                                job_memory, job_timelimit, job_status,
+                                job_output)
         
-        print(cmd)
         subprocess.Popen(cmd, shell=True).wait()
         
     def _add_job(self, config):
@@ -215,13 +260,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         self._gen_locust_script(output_dir)
         cmd = self._assemble_command(output_dir)
         
-        joblist = self._working_dir / self._job_script_name
-        
-        with open(str(joblist), 'a+') as out_file:
+        with open(self._joblist, 'a+') as out_file:
             out_file.write(cmd)
-        
-        #subprocess.Popen('sbatch ' + str(output_dir/self._job_script_name), 
-        #                    shell=True).wait()
         
     def _assemble_command(self, output_dir):
         
