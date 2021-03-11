@@ -223,11 +223,17 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         singularity_cmd = _char_concatenate(' ', singularity_exec, share_output_dir, 
                                             share_hexbug_dir, container, 
                                             run_script)
-                                            
+        
+        check_failure = ("if [ $? -gt 1 ]\n"
+                        +"then\n"
+                        +"    scontrol requeue $SLURM_JOB_ID\n"
+                        +"fi"
+                        )  
+                                     
         commands = _char_concatenate('\n', shebang, job_name, job_output, 
                                     job_error, job_partition, job_timeout, 
                                     job_cpus, job_tasks, job_mem, job_requeue,
-                                    singularity_cmd)
+                                    singularity_cmd, check_failure)
         
         script = output_dir/self._job_script_name 
         
