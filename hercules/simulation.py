@@ -172,6 +172,12 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         
     def __call__(self, config_list):
         
+        for config in config_list:
+            self._submit(config)
+            
+    
+    def _submit(self, config):
+        
         output_dir = self._working_dir / config.sim_name
         output_dir.mkdir(parents=True, exist_ok=True)
         
