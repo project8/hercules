@@ -261,5 +261,7 @@ class KassLocustP3:
                                                           working_dir)
 
     def __call__(self, config_list):
+        if type(config_list) is not list:
+            config_list = [config_list]
         return self._kass_locust(config_list)
     
