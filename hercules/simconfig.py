@@ -348,7 +348,8 @@ class LocustConfig:
 
 class SimConfig:
     
-    def __init__(self, 
+    def __init__(self,
+                sim_name,
                 kass_template = HEXBUG_DIR/'Phase3'/KASS_CONFIG_NAME,
                 seed_kass = None,
                 t_max = None,
@@ -379,6 +380,8 @@ class SimConfig:
                 seed_locust = None,
                 noise_floor_psd = None,
                 noise_temperature = None):
+        
+        self._sim_name = sim_name
         
         self._locust_config = LocustConfig(file_name = locust_template,
                                             n_channels = n_channels,
@@ -412,17 +415,23 @@ class SimConfig:
                                         theta_max = theta_max,
                                         geometry = geometry)
     
+    @property
+    def sim_name(self):
+        return self._sim_name
+    
     def to_json(self, file_name):
         
         with open(file_name, 'w') as outfile:
-            json.dump({'kassConfig': self._kass_config, 
-                        'locustConfig': self._locust_config}, outfile, 
+            json.dump({ 'sim-name': self._sim_name, 
+                        'kass-config': self._kass_config, 
+                        'locust-config': self._locust_config}, outfile, 
                         indent=2, default=lambda x: x.config_dict)
  
                             
     def to_dict(self):
         
-        return {**self._locust_config.config_dict, 
+        return {'sim-name': self._sim_name,
+                **self._locust_config.config_dict, 
                 **self._kass_config.config_dict}
             
     @classmethod
@@ -433,9 +442,10 @@ class SimConfig:
         with open(file_name, 'r') as infile:
             config = json.load(infile)
             
+            instance._sim_name = config['sim-name']
             #accessing 'private' data members; don't do that at home! ;)
-            instance._locust_config._config_dict = config['locustConfig']
-            instance._kass_config._config_dict = config['kassConfig']
+            instance._locust_config._config_dict = config['locust-config']
+            instance._kass_config._config_dict = config['kass-config']
             
         return instance
         
