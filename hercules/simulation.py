@@ -13,6 +13,7 @@ import subprocess
 from abc import ABC, abstractmethod
 import concurrent.futures as cf
 from tqdm import tqdm
+import shutil
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME, KASS_CONFIG_NAME, SIM_CONFIG_NAME, 
@@ -164,7 +165,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
     
     _singularity = Path(CONFIG.container)
     _command_script_name = 'locustcommands.sh'
-    _job_script_name = 'JOB.sh'
+    _job_script_name = 'joblist.txt'
 
     def __init__(self, working_dir, direct=True):
             
@@ -173,10 +174,33 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
     def __call__(self, config_list):
         
         for config in config_list:
-            self._submit(config)
+            self._add_job(config)
             
+        self._submit_job()
     
-    def _submit(self, config):
+    def _submit_job(self):
+        
+        """
+        Based on https://github.com/project8/scripts/blob/master/YaleP8ComputeScripts/GeneratePhase3Sims.py
+        
+        """
+        
+        subprocess.Popen('module load dSQ', shell=True).wait()
+        
+        dsq = 'dsq --requeue --cpus-per-task=2 --submit'
+        job_file = '--job-file ' + str(self._working_dir/self._job_script_name)
+        job_partition = '-p ' + CONFIG.partition
+        job_limit = '--max-jobs ' + CONFIG.job_limit
+        job_memory = '--mem-per-cpu ' + CONFIG.job_memory +'m'
+        job_timelimit = '-t ' + CONFIG.job_timelimit
+        
+        cmd = _char_concatenate(' ', dsq, job_file, job_partition, job_limit,
+                                job_memory, job_timelimit)
+        
+        print(cmd)
+        subprocess.Popen(cmd, shell=True).wait()
+        
+    def _add_job(self, config):
         
         output_dir = self._working_dir / config.sim_name
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -189,28 +213,17 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         config.to_json(config_dump)
         
         self._gen_locust_script(output_dir)
-        self._gen_job_script(output_dir)
+        cmd = self._assemble_command(output_dir)
         
-        subprocess.Popen('sbatch ' + str(output_dir/self._job_script_name), 
-                            shell=True).wait()
+        joblist = self._working_dir / self._job_script_name
         
-    def _gen_job_script(self, output_dir):
+        with open(str(joblist), 'a+') as out_file:
+            out_file.write(cmd)
         
-        """
-        Based on https://github.com/project8/scripts/blob/master/YaleP8ComputeScripts/GeneratePhase3Sims.py
+        #subprocess.Popen('sbatch ' + str(output_dir/self._job_script_name), 
+        #                    shell=True).wait()
         
-        """
-        
-        shebang = '#!/bin/bash'
-        job_name = '#SBATCH -J ' + output_dir.name
-        job_output = '#SBATCH -o ' + str(output_dir) + '/run_singularity.out'
-        job_error = '#SBATCH -e ' + str(output_dir) + '/run_singularity.err'
-        job_partition = '#SBATCH -p ' + CONFIG.partition
-        job_timeout = '#SBATCH -t ' + CONFIG.job_timelimit
-        job_cpus = '#SBATCH --cpus-per-task=2'
-        job_tasks = '#SBATCH --ntasks=1'
-        job_mem = '#SBATCH --mem-per-cpu=' + CONFIG.job_memory
-        job_requeue = '#SBATCH --requeue'
+    def _assemble_command(self, output_dir):
         
         singularity_exec = 'singularity exec --no-home'
         share_output_dir = _gen_shared_dir_string_singularity(output_dir,
@@ -220,27 +233,18 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         container = str(self._singularity)
         run_script = str(OUTPUT_DIR_CONTAINER/self._command_script_name)
         
+        log = '>' + str(output_dir) + '/run_singularity.out'
+        err = '2>' + str(output_dir) + '/run_singularity.err'
+        
         singularity_cmd = _char_concatenate(' ', singularity_exec, share_output_dir, 
                                             share_hexbug_dir, container, 
-                                            run_script)
+                                            run_script, log, err)
         
-        check_failure = ("if [ $? -gt 1 ]\n"
-                        +"then\n"
-                        +"    scontrol requeue $SLURM_JOB_ID\n"
-                        +"fi"
-                        )  
-                                     
-        commands = _char_concatenate('\n', shebang, job_name, job_output, 
-                                    job_error, job_partition, job_timeout, 
-                                    job_cpus, job_tasks, job_mem, job_requeue,
-                                    singularity_cmd, check_failure)
+        check_failure = "if [ $? -gt 1 ];then scontrol requeue $SLURM_JOB_ID;fi;"
+                        
+        final_command = singularity_cmd + ';' + check_failure +'\n\n'
         
-        script = output_dir/self._job_script_name 
-        
-        with open(script, 'w') as out_file:
-            out_file.write(commands)
-            
-        subprocess.Popen('chmod +x '+str(script), shell=True).wait()
+        return final_command
     
     def _gen_locust_script(self, output_dir):   
         
