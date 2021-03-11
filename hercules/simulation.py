@@ -82,13 +82,6 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
     
     def __call__(self, config_list):
         
-      #  tp = ThreadPool(int(CONFIG.parallel_jobs))
-      #  
-      #  for config in config_list:
-      #      tp.apply_async(self._submit, (config,))
-            
-      #  tp.close()
-      #  tp.join()
         print('Running jobs in Locust')
         max_workers = int(CONFIG.parallel_jobs)
         with cf.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -98,42 +91,6 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
                        
             for future in tqdm(cf.as_completed(futures), total=len(futures)):
                 future.result()
-   
-    """    
-    def __call__(self, config_list):
-        
-        childs = []
-        print('todo: ', len(config_list))
-        
-        for config in config_list:
-            
-            print(len(childs))
-            
-            #wait for jobs to finish
-            if len(childs)==int(CONFIG.parallel_jobs):
-                print('Waiting for a process to finish')
-                break
-                
-                #childs = self._wait(childs)
-            
-            childs.append(self._submit(config))
-        
-        for child in childs:
-            print('waiting')
-            child.wait()
-    
-    def _wait(self, childs):
-        
-        i = 0
-        
-        while childs[i].poll() is None:
-            i += 1
-            i = i%len(childs)
-        
-        childs.pop(i)
-        
-        return childs
-     """   
     
     def _submit(self, config):
         
@@ -155,6 +112,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
             p = subprocess.Popen(cmd, shell=True, stdout=log, stderr=err)
         
         p.wait()
+        #fix stty; for some reason the multithreading with docker breaks the shell
+        subprocess.Popen('stty sane', shell=True).wait()
         
     def _assemble_command(self, output_dir):
         
