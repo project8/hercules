@@ -53,14 +53,15 @@ class KassConfig:
     _z_val_expression = '<z_uniform value_min='
     _theta_val_expression = '<theta_uniform value_min='
     _t_max_expression = '<ksterm_max_time name="term_max_time" time='
-    
+    _energy_expression = '<energy_fix value='
     
     _val_max_expression = ' value_max='
     
     _expression_dict_simple = {'seed_kass': _seed_expression,
                                't_max': _t_max_expression,
                                'geometry': _geometry_expression,
-                               'output_path': _output_path_expression }
+                               'output_path': _output_path_expression,
+                               'energy': _energy_expression }
                        
     _expression_dict_complex = {'x_min': _x_val_expression,
                                'y_min': _y_val_expression,
@@ -79,7 +80,8 @@ class KassConfig:
                 z_max = None,
                 theta_min = None,
                 theta_max = None,
-                geometry = None):
+                geometry = None,
+                energy = None):
         
         # returns a dictionary with all defined local variables up to this point
         # dictionary does not change when more variables are declared later 
@@ -362,6 +364,7 @@ class SimConfig:
                 theta_min = None,
                 theta_max = None,
                 geometry = None,
+                energy = None,
                 locust_template = HEXBUG_DIR/'Phase3'/LOCUST_CONFIG_NAME,
                 n_channels = None,
                 egg_filename = None,
@@ -413,7 +416,8 @@ class SimConfig:
                                         z_max = z_max,
                                         theta_min = theta_min,
                                         theta_max = theta_max,
-                                        geometry = geometry)
+                                        geometry = geometry,
+                                        energy = energy)
     
     @property
     def sim_name(self):
