@@ -13,7 +13,7 @@ First, adjust the environment setting in the [configuration](./hercules/settings
 [USER]
 #possible values are 'desktop', 'grace'
 ENVIRONMENT = grace
-PARALLEL_JOBS = 2
+DESKTOP_PARALLEL_JOBS = 2
 ```
 
 Second, run `pip install .` in the directory with setup.py. That's all.

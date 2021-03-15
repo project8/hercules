@@ -126,7 +126,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
     def __call__(self, config_list):
         
         print('Running jobs in Locust')
-        max_workers = int(CONFIG.parallel_jobs)
+        max_workers = int(CONFIG.desktop_parallel_jobs)
         with cf.ThreadPoolExecutor(max_workers=max_workers) as executor:
             
             futures = [executor.submit(self._submit, config) 
