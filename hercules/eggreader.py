@@ -6,29 +6,32 @@ Date: February 22, 2021
 
 """
 
+__all__ = ['LocustP3File']
+
 import numpy as np
 import h5py
 from scipy.fft import fft, fftshift, fftfreq
 
-def _applyDFT(data, dt, dftWindow):
+def _apply_DFT(data, dt, dft_window):
         
     mean = np.mean(data, axis=-1)
     
-    dataFreq = fftshift(fft(data-mean.reshape((data.shape[0],data.shape[1],1)), axis=-1),axes=-1)*np.sqrt(1/dftWindow)
-    frequency = fftshift(fftfreq(dftWindow, d=dt))
+    normalization = np.sqrt(1/dft_window)
+    data_freq = fft(data-mean.reshape((data.shape[0],data.shape[1],1)), axis=-1)
+    data_freq = fftshift(data_freq, axes=-1)                 
+    data_freq = data_freq*normalization
+    frequency = fftshift(fftfreq(dft_window, d=dt))
     
-    return frequency, dataFreq
+    return frequency, data_freq
 
 class LocustP3File:
     
-    #todo only public access maybe
+    _int_max = {8:255, 16:65535}
     
-    __intMax = {8:255, 16:65535}
-    
-    def __init__(self, filename):
+    def __init__(self, file_name):
         
-        self.__inputfile = h5py.File(filename, 'r')
-        self.__getAttributes()
+        self._input_file = h5py.File(file_name, 'r')
+        self._get_attributes()
         
     def __getAttributes(self):
         #not a full list of attributes -> expand
@@ -141,50 +144,66 @@ class LocustP3File:
 
     def keys(self):
         
-        return self.__inputfile.keys()
+        attr = self._input_file['channels']['channel0'].attrs
+        self._v_range = attr['voltage_range']
+        self._v_offset = attr['voltage_offset']
         
-    def __convertToVoltage(self, data):
+    def _convert_to_voltage(self, data):
         
-        return data/self.__intMax[self.__bit_depth]*self.__voltage_range\
-                + self.__voltage_offset
+        return data/self._int_max[self._bit_depth]*self._v_range\
+                + self._v_offset
         
-    def __reshapeTS(self, data):
+    def _reshape_ts(self, data):
         
-        return data.reshape((self.n_channels, -1))
+        return data.reshape((self._n_channels, -1))
         
         
-    def __TStoComplex(self, data):
+    def _ts_to_complex(self, data):
         
         return data[::2] + 1j*data[1::2]
         
-    def loadTS(self):
+    # -------- public part --------
+        
+    def keys(self):
+        
+        return self._input_file.keys()
+        
+    def load_ts(self):
         """
         TODO: Change this to a stream by stream basis
         Load the time series.
         """
         
-        data = self.__inputfile['streams']['stream0']['acquisitions']['0'][0]
-        data = self.__convertToVoltage(data)
-        data = self.__TStoComplex(data)
-        data = self.__reshapeTS(data)
+        data = self._input_file['streams']['stream0']['acquisitions']['0'][0]
+        data = self._convert_to_voltage(data)
+        data = self._ts_to_complex(data)
+        data = self._reshape_ts(data)
         
         return data
         
-    def loadFFT(self, dftWindow):
+    def load_fft(self, dft_window):
         """
         TODO: Change this to a stream by stream basis
         Load the FFT of the time series
         """
+                
+        ts = self.load_ts()
         
-        ts = self.loadTS()
-        
-        nSlices = int(ts.shape[1]/dftWindow)
-        tsSliced = ts[:,:nSlices*dftWindow].reshape(
-                                                (self.n_channels, nSlices, -1))
+        n_slices = int(ts.shape[1]/dft_window)
+        ts_sliced = ts[:,:n_slices*dft_window].reshape(
+                                                (self._n_channels, n_slices, -1))
         
         #explicit copy to rearange order in memory
-        tsFinal = tsSliced.transpose(1,0,2).copy()
+        ts_final = ts_sliced.transpose(1,0,2).copy()
         
-        frequency, dataFreq = _applyDFT(tsFinal, 1/self.acq_rate, dftWindow)
+        frequency, data_freq = _apply_DFT(ts_final, 1/self._sr, dft_window)
         
-        return frequency, dataFreq
+        return frequency, data_freq
+    
+    @property
+    def sr(self):
+        return self._sr
+        
+    @property
+    def n_channels(self):
+        return self._n_channels
