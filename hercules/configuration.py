@@ -28,7 +28,7 @@ class Configuration:
         self._locust_path = config['PACKAGE']['LOCUSTPATH']
         self._p8compute_version = config['PACKAGE']['P8COMPUTEVERSION']
         self._p8compute_path = config['PACKAGE']['P8COMPUTEPATH']
-        self._parallel_jobs = config['USER']['PARALLEL_JOBS']
+        self._desktop_parallel_jobs = config['USER']['DESKTOP_PARALLEL_JOBS']
         
         self._partition = config['GRACE']['JOB_PARTITION']
         self._job_timelimit = config['GRACE']['JOB_TIMELIMIT']
@@ -73,8 +73,8 @@ class Configuration:
         return self._container
         
     @property
-    def parallel_jobs(self):
-        return self._parallel_jobs
+    def desktop_parallel_jobs(self):
+        return self._desktop_parallel_jobs
         
     @property
     def partition(self):
