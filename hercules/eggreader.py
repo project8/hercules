@@ -5,25 +5,24 @@ Date: February 22, 2021
 
 """
 
-# __all__ = ['LocustP3File']
+__all__ = ['LocustP3File']
 
 import numpy as np
 import h5py
 from scipy.fft import fft, fftshift, fftfreq
 
 
-def _apply_DFT(data, dt, dft_window):
+def _apply_DFT(data, dft_window):
 
-    mean = np.mean(data, axis=-1)
+    mean = np.mean(data, axis=-1, keepdims=True)
 
     normalization = np.sqrt(1 / dft_window)
-    data_freq = fft(data - mean.reshape((data.shape[0], data.shape[1], 1)),
-                    axis=-1)
+    # By default uses the last axis
+    data_freq = fft(data - mean)
     data_freq = fftshift(data_freq, axes=-1)
     data_freq = data_freq * normalization
-    frequency = fftshift(fftfreq(dft_window, d=dt))
 
-    return frequency, data_freq
+    return data_freq
 
 
 def _to_complex(data):
@@ -146,10 +145,11 @@ class LocustP3File:
 
         return result
 
-    def load_fft_stream(self, dft_window, stream: int = 0):
+    def load_fft_stream(self, dft_window: int = 4096, stream: int = 0):
         """
-        TODO: Change this to a stream by stream basis
-        Load the FFT of the time series
+        Load the FFT of the timeseries.
+        dft_window: sample size for each DFT slice, defaults to 4096.
+        Structure is the same as that of the timeseries.
         """
         try:
             s = self._input_file['streams']["stream{}".format(stream)]
@@ -161,24 +161,27 @@ class LocustP3File:
         attr = self.get_stream_attrs(stream)
         # Rate from MHz -> Hz
         acq_rate = attr['acquisition_rate'] * 1e6
-        n_acq = attr['n_acquisitions']
-        record_size = attr['record_size']
         channels = attr['channels']
-        ch_format = attr['channel_format']
 
-        ts = self.load_ts()
+        ts = self.load_ts_stream(stream=stream)
+        result = {}
 
-        n_slices = int(ts.shape[1] / dft_window)
-        ts_sliced = ts[:, :n_slices * dft_window].reshape(
-            (self._n_channels, n_slices, -1))
+        for ch in channels:
+            ts_ch = ts[ch]
+            n_slices = int(ts_ch.shape[-1] / dft_window)
+            ts_sliced = ts_ch[:, :, :n_slices * dft_window].reshape(
+                (ts_ch.shape[0], ts_ch.shape[1], n_slices, -1))
 
-        #explicit copy to rearange order in memory
-        ts_final = ts_sliced.transpose(1, 0, 2).copy()
+            # Apply DFT to sliced ts and return DFT in the original shape
+            # freq is a single array since acq_rate is the same for all data in the stream
+            data_freq = _apply_DFT(ts_sliced, dft_window)
+            result[ch] = data_freq
 
-        frequency, data_freq = _apply_DFT(ts_final, 1 / self._acq_rate,
-                                          dft_window)
+            # Explicit copy to rearrange order in memory <- Not sure if necessary
+            # ts_final = ts_sliced.transpose(1, 0, 2).copy()
 
-        return frequency, data_freq
+        frequency = fftshift(fftfreq(dft_window, d=1 / acq_rate))
+        return frequency, result
 
     @property
     def n_channels(self):
