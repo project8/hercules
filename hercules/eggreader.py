@@ -94,10 +94,6 @@ class LocustP3File:
             bit_depth] * voltage_range + voltage_offset
         return result
 
-    def _reshape_ts(self, data):
-
-        return data.reshape((self._n_channels, -1))
-
     # -------- public part -------- #
 
     def load_ts_stream(self, stream: int = 0):
