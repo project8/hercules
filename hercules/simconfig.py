@@ -144,7 +144,7 @@ class KassConfig:
                 minVal, maxVal =( 
                     self._get_min_max_val(self._expression_dict_complex[key], self._xml))
                 self._config_dict[key] = minVal
-                self._config_dict[key[:-3]+'Max'] = maxVal
+                self._config_dict[key[:-3]+'max'] = maxVal
      
     def _replace_simple(self, key, string):
         
