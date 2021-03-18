@@ -18,7 +18,12 @@ HEXBUG_DIR = MODULE_DIR / 'hexbug'
 #-> make sure it's PosixPath when run from windows
 HEXBUG_DIR_CONTAINER = PosixPath('/') / 'tmp'
 OUTPUT_DIR_CONTAINER = PosixPath('/') / 'home' 
-LOCUST_CONFIG_NAME = 'LocustPhase3Template.json'
+LOCUST_CONFIG_NAME_P2 = 'LocustPhase2Template.json'
+KASS_CONFIG_NAME_P2 = 'Project8Phase2_WithRoot_Template.xml'
+LOCUST_CONFIG_NAME_P3 = 'LocustPhase3Template.json'
+KASS_CONFIG_NAME_P3 = 'LocustKassElectrons.xml'
+
+LOCUST_CONFIG_NAME = 'Locust.json'
 KASS_CONFIG_NAME = 'LocustKassElectrons.xml'
 SIM_CONFIG_NAME = 'SimConfig.json'
 

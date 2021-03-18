@@ -15,7 +15,8 @@ from pathlib import Path, PosixPath
 from abc import ABC, abstractmethod
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
-                        LOCUST_CONFIG_NAME, KASS_CONFIG_NAME)
+                        LOCUST_CONFIG_NAME_P2, KASS_CONFIG_NAME_P2,
+                        LOCUST_CONFIG_NAME_P3, KASS_CONFIG_NAME_P3)
 
 def _get_rand_seed():
     
@@ -46,6 +47,8 @@ class KassConfig:
     #_int_regex = re.compile('"(\d+)"') #not used
     _match_all_regex = re.compile('"(.+?)"')
     
+    _config_path_expression = '<define name="config_path" value='
+    
     _seed_expression = '<external_define name="seed" value='
     _output_path_expression = '<external_define name="output_path" value='
     _geometry_expression = '<geometry>\n    <include name='
@@ -62,6 +65,7 @@ class KassConfig:
                                't_max': _t_max_expression,
                                'geometry': _geometry_expression,
                                'output_path': _output_path_expression,
+                               'config_path': _config_path_expression,
                                'energy': _energy_expression }
                        
     _expression_dict_complex = {'x_min': _x_val_expression,
@@ -70,7 +74,7 @@ class KassConfig:
                                'theta_min': _theta_val_expression }
     
     def __init__(self,
-                file_name = HEXBUG_DIR/'Phase3'/KASS_CONFIG_NAME,
+                file_name = HEXBUG_DIR/'Phase3'/KASS_CONFIG_NAME_P3,
                 seed_kass = None,
                 t_max = None,
                 x_min = None,
@@ -93,6 +97,7 @@ class KassConfig:
         
         self._handle_seed()
         self._config_dict['output_path'] = str(OUTPUT_DIR_CONTAINER)
+        self._config_dict['config_path'] = str(HEXBUG_DIR_CONTAINER/'Phase2')
         
         self._xml = _get_xml_from_file(file_name)
         self._add_defaults()
@@ -171,7 +176,9 @@ class KassConfig:
                                 
     def _adjust_paths(self):
         
-        self._prefix('geometry', str(HEXBUG_DIR_CONTAINER)+'/Phase3/Trap/')
+        #self._prefix('geometry', str(HEXBUG_DIR_CONTAINER)+'/Phase3/Trap/')
+        #self._prefix('geometry', str(HEXBUG_DIR_CONTAINER)+'/Phase2/')
+        self._prefix('geometry', '[config_path]/Trap/')
         
                         
     def _replace_all(self):
@@ -296,8 +303,6 @@ class LocustConfig(ABC):
                         str(OUTPUT_DIR_CONTAINER) + '/')
         self._prefix(self._sim_key, self._egg_filename_key, 
                         str(OUTPUT_DIR_CONTAINER) + '/')
-        self._prefix(self._array_key, self._tf_receiver_filename_key, 
-                        str(HEXBUG_DIR_CONTAINER)+'/Phase3/TransferFunctions/')
     
     # -------- public part --------
     
@@ -329,7 +334,7 @@ class LocustConfigArraySignal(LocustConfig):
     _xml_filename_key = 'xml-filename'
     
     def __init__(self,
-                file_name = HEXBUG_DIR/'Phase3'/LOCUST_CONFIG_NAME,
+                file_name = HEXBUG_DIR/'Phase3'/LOCUST_CONFIG_NAME_P3,
                 n_channels = None,
                 egg_filename = None,
                 record_size = None,
@@ -372,6 +377,65 @@ class LocustConfigArraySignal(LocustConfig):
         
         templateConfig = _get_json_from_file(file_name)
         self._finalize(templateConfig)
+        
+        self._prefix(self._array_key, self._tf_receiver_filename_key, 
+                str(HEXBUG_DIR_CONTAINER)+'/Phase3/TransferFunctions/')
+    
+    def set_xml(self, path):
+        name = path.name
+        self._set(self._array_key, self._xml_filename_key, 
+                    str(OUTPUT_DIR_CONTAINER / name))
+                    
+class LocustConfigKassSignal(LocustConfig):
+    
+    _array_key = 'kass-signal'
+    
+    _lo_frequency_key = 'lo-frequency'
+    _center_to_short_key = 'center-to-short'
+    _center_to_antenna_key = 'center-to-antenna'
+    _pitchangle_filename_key = 'pitchangle-filename'
+    _xml_filename_key = 'xml-filename'
+    
+    _pitchangle_filename = 'pitchangles.txt'
+    
+    def __init__(self,
+                file_name = HEXBUG_DIR/'Phase2'/LOCUST_CONFIG_NAME_P2,
+                n_channels = None,
+                egg_filename = None,
+                record_size = None,
+                n_records = None,
+                v_range = None,
+                lo_frequency = None,
+                center_to_short = None,
+                center_to_antenna = None,
+                xml_filename = None,
+                random_seed = None,
+                noise_floor_psd = None,
+                noise_temperature = None):
+                    
+        LocustConfig.__init__(self,
+                                n_channels = n_channels,
+                                egg_filename = egg_filename,
+                                record_size = record_size,
+                                n_records = n_records,
+                                v_range = v_range,
+                                random_seed = random_seed,
+                                noise_floor_psd = noise_floor_psd,
+                                noise_temperature = noise_temperature)
+                    
+        self._config_dict[self._generators_key].insert(0,self._array_key)
+                    
+        self._set(self._array_key, self._lo_frequency_key, lo_frequency)
+        self._set(self._array_key, self._center_to_short_key, center_to_short)
+        self._set(self._array_key, self._center_to_antenna_key, 
+                    center_to_antenna)
+                    
+        self._set(self._array_key, self._pitchangle_filename_key, 
+                    str(OUTPUT_DIR_CONTAINER / self._pitchangle_filename))
+        self._set(self._array_key, self._xml_filename_key, xml_filename)
+        
+        templateConfig = _get_json_from_file(file_name)
+        self._finalize(templateConfig)
     
     def set_xml(self, path):
         name = path.name
@@ -382,7 +446,7 @@ class SimConfig:
     
     def __init__(self,
                 sim_name,
-                kass_template = 'Phase3/'+KASS_CONFIG_NAME,
+                kass_template = 'Phase3/'+KASS_CONFIG_NAME_P3,
                 seed_kass = None,
                 t_max = None,
                 x_min = None,
@@ -395,7 +459,7 @@ class SimConfig:
                 theta_max = None,
                 geometry = None,
                 energy = None,
-                locust_template = 'Phase3/'+LOCUST_CONFIG_NAME,
+                locust_template = 'Phase3/'+LOCUST_CONFIG_NAME_P3,
                 n_channels = None,
                 egg_filename = None,
                 record_size = None,
@@ -419,20 +483,32 @@ class SimConfig:
         locust_template = HEXBUG_DIR/locust_template
         kass_template = HEXBUG_DIR/kass_template
         
-        self._locust_config = LocustConfigArraySignal(file_name = locust_template,
+        # ~ self._locust_config = LocustConfigArraySignal(file_name = locust_template,
+                                            # ~ n_channels = n_channels,
+                                            # ~ egg_filename = egg_filename,
+                                            # ~ record_size = record_size,
+                                            # ~ n_records = n_records,
+                                            # ~ v_range = v_range,
+                                            # ~ lo_frequency = lo_frequency,
+                                            # ~ n_elements_per_strip = n_elements_per_strip,
+                                            # ~ n_subarrays = n_subarrays,
+                                            # ~ zshift_array = zshift_array,
+                                            # ~ array_radius = array_radius,
+                                            # ~ element_spacing = element_spacing,
+                                            # ~ tf_receiver_bin_width = tf_receiver_bin_width,
+                                            # ~ tf_receiver_filename = tf_receiver_filename,
+                                            # ~ xml_filename = xml_filename,
+                                            # ~ random_seed = seed_locust,
+                                            # ~ noise_floor_psd = noise_floor_psd,
+                                            # ~ noise_temperature = noise_temperature)
+                                            
+        self._locust_config = LocustConfigKassSignal(file_name = locust_template,
                                             n_channels = n_channels,
                                             egg_filename = egg_filename,
                                             record_size = record_size,
                                             n_records = n_records,
                                             v_range = v_range,
                                             lo_frequency = lo_frequency,
-                                            n_elements_per_strip = n_elements_per_strip,
-                                            n_subarrays = n_subarrays,
-                                            zshift_array = zshift_array,
-                                            array_radius = array_radius,
-                                            element_spacing = element_spacing,
-                                            tf_receiver_bin_width = tf_receiver_bin_width,
-                                            tf_receiver_filename = tf_receiver_filename,
                                             xml_filename = xml_filename,
                                             random_seed = seed_locust,
                                             noise_floor_psd = noise_floor_psd,
