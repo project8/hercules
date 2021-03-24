@@ -147,13 +147,6 @@ class LocustP3File:
         dft_window: sample size for each DFT slice, defaults to 4096.
         Structure is the same as that of the timeseries.
         """
-        try:
-            s = self._input_file['streams']["stream{}".format(stream)]
-        except KeyError as kerr:
-            print(kerr)
-        except Exception as e:
-            print(e)
-            raise
         attr = self.get_stream_attrs(stream)
         # Rate from MHz -> Hz
         acq_rate = attr['acquisition_rate'] * 1e6
