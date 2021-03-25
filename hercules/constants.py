@@ -21,5 +21,3 @@ OUTPUT_DIR_CONTAINER = PosixPath('/') / 'home'
 LOCUST_CONFIG_NAME = 'LocustPhase3Template.json'
 KASS_CONFIG_NAME = 'LocustKassElectrons.xml'
 SIM_CONFIG_NAME = 'SimConfig.json'
-
-CONFIG = Configuration()

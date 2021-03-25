@@ -17,10 +17,13 @@ _CONFIGDIR = _MODULEDIR/'settings'/'config.ini'
 
 class Configuration:
     
-    def __init__(self):
+    def __init__(self, config_file=None):
         
         config = configparser.ConfigParser()
-        config.read(_CONFIGDIR)
+        if config_file is None:
+            config.read(_CONFIGDIR)
+        else:
+            config.read(config_file)
         
         self._handle_env(config)
         
