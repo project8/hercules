@@ -220,6 +220,7 @@ class LocustConfig:
     _zshift_array_key = 'zshift-array'
     _array_radius_key = 'array-radius'
     _element_spacing_key = 'element-spacing'
+    _presample_spacing_key = 'event-spacing-samples'
     _tf_receiver_bin_width_key = 'tf-receiver-bin-width'
     _tf_receiver_filename_key = 'tf-receiver-filename'
     _xml_filename_key = 'xml-filename'
@@ -240,6 +241,7 @@ class LocustConfig:
                 zshift_array = None,
                 array_radius = None,
                 element_spacing = None,
+                presample_spacing = None,
                 tf_receiver_bin_width = None,
                 tf_receiver_filename = None,
                 xml_filename = None,
@@ -263,6 +265,7 @@ class LocustConfig:
         self._set(self._array_key, self._zshift_array_key, zshift_array)
         self._set(self._array_key, self._array_radius_key, array_radius)
         self._set(self._array_key, self._element_spacing_key, element_spacing)
+        self._set(self._array_key, self._presample_spacing_key, presample_spacing)
         self._set(self._array_key, self._tf_receiver_bin_width_key, tf_receiver_bin_width)
         self._set(self._array_key, self._tf_receiver_filename_key, tf_receiver_filename)
         self._set(self._array_key, self._xml_filename_key, xml_filename)
@@ -377,6 +380,7 @@ class SimConfig:
                 zshift_array = None,
                 array_radius = None,
                 element_spacing = None,
+                presample_spacing = None,
                 tf_receiver_bin_width = None,
                 tf_receiver_filename = None,
                 xml_filename = None,
@@ -398,6 +402,7 @@ class SimConfig:
                                             zshift_array = zshift_array,
                                             array_radius = array_radius,
                                             element_spacing = element_spacing,
+                                            presample_spacing = presample_spacing,
                                             tf_receiver_bin_width = tf_receiver_bin_width,
                                             tf_receiver_filename = tf_receiver_filename,
                                             xml_filename = xml_filename,
