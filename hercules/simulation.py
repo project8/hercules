@@ -124,7 +124,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         AbstractKassLocustP3.__init__(self, working_dir, config, direct)
         self._container = config.container
         self._max_workers = int(config.desktop_parallel_jobs)
-        self._gen_command_script()
+        # self._gen_command_script()
 
     def __call__(self, sim_config_list):
 
@@ -148,6 +148,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
 
         sim_config.make_config_file(locust_file, kass_file)
         sim_config.to_json(config_dump)
+        self._gen_command_script(output_dir)
 
         cmd = self._assemble_command(output_dir)
 
@@ -163,15 +164,15 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         docker_run = 'docker run -it --rm'
 
         bash_command = ('"'
-                       + str(self._working_dir_container/self._command_script_name)
+                       + str(OUTPUT_DIR_CONTAINER/self._command_script_name)
                        + ' '
                        + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME)
                        + '"')
 
         docker_command = '/bin/bash -c ' + bash_command
 
-        share_working_dir = _gen_shared_dir_string(self._working_dir,
-                                            self._working_dir_container)
+        # share_working_dir = _gen_shared_dir_string(self._working_dir,
+        #                                     self._working_dir_container)
 
         share_output_dir = _gen_shared_dir_string(output_dir,
                                             OUTPUT_DIR_CONTAINER)
@@ -179,13 +180,16 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         share_hexbug_dir = _gen_shared_dir_string(HEXBUG_DIR, HEXBUG_DIR_CONTAINER)
 
 
-        cmd = _char_concatenate(' ', docker_run, share_working_dir,
-                                    share_output_dir, share_hexbug_dir,
-                                    self._container, docker_command)
+        # cmd = _char_concatenate(' ', docker_run, share_working_dir,
+        #                             share_output_dir, share_hexbug_dir,
+        #                             self._container, docker_command)
+        cmd = _char_concatenate(' ', docker_run,
+                            share_output_dir, share_hexbug_dir,
+                            self._container, docker_command)
 
         return cmd
 
-    def _gen_command_script(self):
+    def _gen_command_script(self, output_dir):
 
         shebang = '#!/bin/bash'
         p8_env = _char_concatenate(' ', 'source',
@@ -196,7 +200,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
 
         commands = _char_concatenate('\n', shebang, p8_env, kasper_env, locust)
 
-        script = self._working_dir/self._command_script_name
+        script = output_dir/self._command_script_name
         with open(script, 'w') as out_file:
             out_file.write(commands)
 
