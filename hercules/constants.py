@@ -19,7 +19,7 @@ HEXBUG_DIR = MODULE_DIR / 'hexbug'
 HEXBUG_DIR_CONTAINER = PosixPath('/') / 'tmp'
 OUTPUT_DIR_CONTAINER = PosixPath('/') / 'home' 
 LOCUST_CONFIG_NAME_P2 = 'LocustPhase2Template.json'
-KASS_CONFIG_NAME_P2 = 'Project8Phase2_WithRoot_Template.xml'
+KASS_CONFIG_NAME_P2 = 'Project8Phase2_electrons.xml'
 LOCUST_CONFIG_NAME_P3 = 'LocustPhase3Template.json'
 KASS_CONFIG_NAME_P3 = 'LocustKassElectrons.xml'
 

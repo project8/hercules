@@ -47,7 +47,7 @@ class KassConfig:
     #_int_regex = re.compile('"(\d+)"') #not used
     _match_all_regex = re.compile('"(.+?)"')
     
-    _config_path_expression = '<define name="config_path" value='
+    _config_path_expression = '<external_define name="config_path" value='
     
     _seed_expression = '<external_define name="seed" value='
     _output_path_expression = '<external_define name="output_path" value='
@@ -74,7 +74,8 @@ class KassConfig:
                                'theta_min': _theta_val_expression }
     
     def __init__(self,
-                file_name = HEXBUG_DIR/'Phase3'/KASS_CONFIG_NAME_P3,
+                phase = 'Phase3',
+                file_name = None,
                 seed_kass = None,
                 t_max = None,
                 x_min = None,
@@ -95,20 +96,40 @@ class KassConfig:
         self._config_dict = locals()
         self._clean_initial_config()
         
+        self._handle_phase(phase, file_name)
+        
         self._handle_seed()
         self._config_dict['output_path'] = str(OUTPUT_DIR_CONTAINER)
-        self._config_dict['config_path'] = str(HEXBUG_DIR_CONTAINER/'Phase2')
+        self._config_dict['config_path'] = str(self._config_path)
         
-        self._xml = _get_xml_from_file(file_name)
+        self._xml = _get_xml_from_file(self._file_name)
         self._add_defaults()
         self._adjust_paths()
  
     # -------- private part --------
+    
+    def _handle_phase(self, phase, file_name):
+        
+        allowed = phase=='Phase2' or phase =='Phase3'
+        
+        if allowed:
+            
+            self._config_path = HEXBUG_DIR_CONTAINER/phase
+            
+            if file_name is None:
+                file_name = (KASS_CONFIG_NAME_P3 if phase=='Phase3' else
+                                KASS_CONFIG_NAME_P2)
+            
+            self._file_name = HEXBUG_DIR/phase/file_name
+            
+        else:
+            raise ValueError('Only "Phase2" or "Phase3" are supported')
         
     def _clean_initial_config(self):
         # remove 'self' and 'file_name' from the dictionary
         self._config_dict.pop('self', None)
         self._config_dict.pop('file_name', None)
+        self._config_dict.pop('phase', None)
         
     def _handle_seed(self):
         if not self._config_dict['seed_kass']:
@@ -176,8 +197,6 @@ class KassConfig:
                                 
     def _adjust_paths(self):
         
-        #self._prefix('geometry', str(HEXBUG_DIR_CONTAINER)+'/Phase3/Trap/')
-        #self._prefix('geometry', str(HEXBUG_DIR_CONTAINER)+'/Phase2/')
         self._prefix('geometry', '[config_path]/Trap/')
         
                         
@@ -446,7 +465,8 @@ class SimConfig:
     
     def __init__(self,
                 sim_name,
-                kass_template = 'Phase3/'+KASS_CONFIG_NAME_P3,
+                phase = 'Phase3',
+                kass_template = None,
                 seed_kass = None,
                 t_max = None,
                 x_min = None,
@@ -481,7 +501,7 @@ class SimConfig:
         self._sim_name = sim_name
         
         locust_template = HEXBUG_DIR/locust_template
-        kass_template = HEXBUG_DIR/kass_template
+        #kass_template = HEXBUG_DIR/kass_template
         
         # ~ self._locust_config = LocustConfigArraySignal(file_name = locust_template,
                                             # ~ n_channels = n_channels,
@@ -515,6 +535,7 @@ class SimConfig:
                                             noise_temperature = noise_temperature)
                                         
         self._kass_config = KassConfig(file_name = kass_template,
+                                        phase = phase,
                                         seed_kass = seed_kass,
                                         t_max = t_max,
                                         x_min = x_min,
