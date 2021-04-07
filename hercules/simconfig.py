@@ -367,7 +367,6 @@ class LocustConfigArraySignal(LocustConfig):
                 element_spacing = None,
                 tf_receiver_bin_width = None,
                 tf_receiver_filename = None,
-                xml_filename = None,
                 random_seed = None,
                 noise_floor_psd = None,
                 noise_temperature = None):
@@ -392,7 +391,6 @@ class LocustConfigArraySignal(LocustConfig):
         self._set(self._array_key, self._element_spacing_key, element_spacing)
         self._set(self._array_key, self._tf_receiver_bin_width_key, tf_receiver_bin_width)
         self._set(self._array_key, self._tf_receiver_filename_key, tf_receiver_filename)
-        self._set(self._array_key, self._xml_filename_key, xml_filename)
         
         templateConfig = _get_json_from_file(file_name)
         self._finalize(templateConfig)
@@ -427,7 +425,6 @@ class LocustConfigKassSignal(LocustConfig):
                 lo_frequency = None,
                 center_to_short = None,
                 center_to_antenna = None,
-                xml_filename = None,
                 random_seed = None,
                 noise_floor_psd = None,
                 noise_temperature = None):
@@ -451,7 +448,6 @@ class LocustConfigKassSignal(LocustConfig):
                     
         self._set(self._array_key, self._pitchangle_filename_key, 
                     str(OUTPUT_DIR_CONTAINER / self._pitchangle_filename))
-        self._set(self._array_key, self._xml_filename_key, xml_filename)
         
         templateConfig = _get_json_from_file(file_name)
         self._finalize(templateConfig)
@@ -493,7 +489,6 @@ class SimConfig:
                 element_spacing = None,
                 tf_receiver_bin_width = None,
                 tf_receiver_filename = None,
-                xml_filename = None,
                 seed_locust = None,
                 noise_floor_psd = None,
                 noise_temperature = None):
@@ -529,7 +524,6 @@ class SimConfig:
                                             n_records = n_records,
                                             v_range = v_range,
                                             lo_frequency = lo_frequency,
-                                            xml_filename = xml_filename,
                                             random_seed = seed_locust,
                                             noise_floor_psd = noise_floor_psd,
                                             noise_temperature = noise_temperature)
