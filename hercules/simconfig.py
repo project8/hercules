@@ -61,6 +61,7 @@ class KassConfig:
     
     _val_max_expression = ' value_max='
     
+    # these dictionaries define the accepted parameters
     _expression_dict_simple = {'seed_kass': _seed_expression,
                                't_max': _t_max_expression,
                                'geometry': _geometry_expression,
@@ -75,26 +76,10 @@ class KassConfig:
     
     def __init__(self,
                 phase = 'Phase3',
-                file_name = None,
-                seed_kass = None,
-                t_max = None,
-                x_min = None,
-                x_max = None,
-                y_min = None,
-                y_max = None,
-                z_min = None,
-                z_max = None,
-                theta_min = None,
-                theta_max = None,
-                geometry = None,
-                energy = None):
+                **kwargs):
         
-        # returns a dictionary with all defined local variables up to this point
-        # dictionary does not change when more variables are declared later 
-        # -> It is important that this stays at the top!
-        # https://stackoverflow.com/questions/2521901/get-a-list-tuple-dict-of-the-arguments-passed-to-a-function
-        self._config_dict = locals()
-        self._clean_initial_config()
+        file_name = kwargs.pop('file_name', None)
+        self._config_dict = kwargs
         
         self._handle_phase(phase, file_name)
         self._handle_seed()
@@ -131,7 +116,7 @@ class KassConfig:
         self._config_dict.pop('phase', None)
         
     def _handle_seed(self):
-        if not self._config_dict['seed_kass']:
+        if 'seed_kass' not in self._config_dict:
             self._config_dict['seed_kass'] = _get_rand_seed()
     
     def _add_defaults(self):
@@ -159,14 +144,16 @@ class KassConfig:
     def _add_simple_defaults(self):
         
         for key in self._expression_dict_simple:
-            if self._config_dict[key] is None:
+            #if self._config_dict[key] is None:
+            if key not in self._config_dict:
                 self._config_dict[key] =(
                     self._get_val(self._expression_dict_simple[key], self._xml) )
                 
     def _add_complex_defaults(self):
         
         for key in self._expression_dict_complex:
-            if self._config_dict[key] is None:
+            #if self._config_dict[key] is None:
+            if key not in self._config_dict:
                 minVal, maxVal =( 
                     self._get_min_max_val(self._expression_dict_complex[key], self._xml))
                 self._config_dict[key] = minVal
@@ -442,21 +429,8 @@ class SimConfig:
     def __init__(self,
                 sim_name,
                 phase = 'Phase3',
-                kass_template = None,
+                #kass_template = None,
                 locust_template = None,
-                #move remaining parameters to dictionary
-                seed_kass = None,
-                t_max = None,
-                x_min = None,
-                x_max = None,
-                y_min = None,
-                y_max = None,
-                z_min = None,
-                z_max = None,
-                theta_min = None,
-                theta_max = None,
-                geometry = None,
-                energy = None,
                 #locust parameters
                 n_channels = None,
                 egg_filename = None,
@@ -475,12 +449,13 @@ class SimConfig:
                 center_to_antenna = None,
                 seed_locust = None,
                 noise_floor_psd = None,
-                noise_temperature = None):
+                noise_temperature = None,
+                **kwargs):
         
         self._sim_name = sim_name
         
-        self._locust_config = LocustConfig(file_name = locust_template,
-                                            phase = phase,
+        self._locust_config = LocustConfig(phase = phase,
+                                            file_name = locust_template,
                                             n_channels = n_channels,
                                             egg_filename = egg_filename,
                                             record_size = record_size,
@@ -499,33 +474,8 @@ class SimConfig:
                                             noise_temperature = noise_temperature,
                                             center_to_short = center_to_short,
                                             center_to_antenna = center_to_antenna)
-                                            
-        # ~ self._locust_config = LocustConfigKassSignal(file_name = locust_template,
-                                            # ~ egg_filename = egg_filename,
-                                            # ~ record_size = record_size,
-                                            # ~ n_records = n_records,
-                                            # ~ v_range = v_range,
-                                            # ~ lo_frequency = lo_frequency,
-                                            # ~ random_seed = seed_locust,
-                                            # ~ center_to_short = center_to_short,
-                                            # ~ center_to_antenna = center_to_antenna,
-                                            # ~ noise_floor_psd = noise_floor_psd,
-                                            # ~ noise_temperature = noise_temperature)
                                         
-        self._kass_config = KassConfig(file_name = kass_template,
-                                        phase = phase,
-                                        seed_kass = seed_kass,
-                                        t_max = t_max,
-                                        x_min = x_min,
-                                        x_max = x_max,
-                                        y_min = y_min,
-                                        y_max = y_max,
-                                        z_min = z_min,
-                                        z_max = z_max,
-                                        theta_min = theta_min,
-                                        theta_max = theta_max,
-                                        geometry = geometry,
-                                        energy = energy)
+        self._kass_config = KassConfig( phase = phase, **kwargs)
     
     @property
     def sim_name(self):
@@ -549,7 +499,7 @@ class SimConfig:
     @classmethod
     def from_json(cls, file_name):
         
-        instance = cls()
+        instance = cls('')
         
         with open(file_name, 'r') as infile:
             config = json.load(infile)
