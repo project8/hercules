@@ -80,7 +80,8 @@ class KassConfig:
                 kass_file_name = None,
                 **kwargs):
         
-        self._config_dict = kwargs
+        #self._config_dict = kwargs
+        self._read_config_dict(kwargs)
         
         self._handle_phase(phase, kass_file_name)
         self._handle_seed()
@@ -90,6 +91,18 @@ class KassConfig:
         self._adjust_paths()
  
     # -------- private part --------
+    
+    def _read_config_dict(self, config_dict):
+        
+        self._config_dict = {}
+        
+        for key in config_dict:
+            key_min = key[:-3]+'min'
+            accepted = ( key in self._expression_dict_simple
+                         or key in self._expression_dict_complex
+                         or key_min in self._expression_dict_complex) 
+            if accepted:
+                self._config_dict[key] = config_dict[key]
     
     def _handle_phase(self, phase, file_name):
     
@@ -233,29 +246,18 @@ class KassConfig:
         xml = self._replace_all()
         _write_xml_file(output_path, xml)
    
-class Dict2dSetter:
+def _set_dict_2d(key_dict, key_to_var_dict, arg_dict):
     
-    def __init__(self, key_dict, key_to_var_dict):
-        
-        self._key_dict = key_dict
-        self._key_to_var_dict = key_to_var_dict
-    
-    def set_dict(self, arg_dict):
-        
-        output = {}
-        for key in self._key_dict:
-            output[key] = {}
-            for sub_key in self._key_dict[key]:
-                var = self._key_to_var_dict.get(sub_key)
-                val = arg_dict.get(var)
-                if val:
-                    output[key][sub_key] = val
-                    
-        return output
-    
-    def __call__(self, arg_dict):
-        
-        return self.set_dict(arg_dict)
+    output = {}
+    for key in key_dict:
+        output[key] = {}
+        for sub_key in key_dict[key]:
+            var = key_to_var_dict.get(sub_key)
+            val = arg_dict.get(var)
+            if val:
+                output[key][sub_key] = val
+                
+    return output
 
 class LocustConfig:
     
@@ -369,9 +371,8 @@ class LocustConfig:
         self._handle_phase(phase, locust_file_name)
         templateConfig = _get_json_from_file(self._file_name)
         
-        
-        dict_setter = Dict2dSetter(self._key_dict, self._key_to_var_dict)
-        self._config_dict = dict_setter(kwargs)
+        self._config_dict = _set_dict_2d(self._key_dict, self._key_to_var_dict, 
+                                            kwargs)
         self._config_dict[self._generators_key] = [self._signal_key,
                                                     self._fft_key, 
                                                     self._decimate_key, 
