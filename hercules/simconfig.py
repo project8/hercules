@@ -76,12 +76,12 @@ class KassConfig:
     
     def __init__(self,
                 phase = 'Phase3',
+                kass_file_name = None,
                 **kwargs):
         
-        file_name = kwargs.pop('file_name', None)
         self._config_dict = kwargs
         
-        self._handle_phase(phase, file_name)
+        self._handle_phase(phase, kass_file_name)
         self._handle_seed()
         self._config_dict['output_path'] = str(OUTPUT_DIR_CONTAINER)
         self._config_dict['config_path'] = str(self._config_path)
@@ -207,14 +207,39 @@ class KassConfig:
         
         xml = self._replace_all()
         _write_xml_file(output_path, xml)
+   
+class Dict2dSetter:
+    
+    def __init__(self, key_dict, key_to_var_dict):
         
+        self._key_dict = key_dict
+        self._key_to_var_dict = key_to_var_dict
+    
+    def set_dict(self, arg_dict):
+        
+        output = {}
+        for key in self._key_dict:
+            output[key] = {}
+            for sub_key in self._key_dict[key]:
+                var = self._key_to_var_dict.get(sub_key)
+                val = arg_dict.get(var)
+                if val:
+                    output[key][sub_key] = val
+                    
+        return output
+    
+    def __call__(self, arg_dict):
+        
+        return self.set_dict(arg_dict)
 
-class LocustConfig():
+class LocustConfig:
     
     #private class variables to store the json keys
     #if a key changes we can change it here
     
-    #for all phases
+    #all phases
+    
+    #first level keys
     _sim_key = 'simulation'
     _digit_key = 'digitizer'
     _noise_key = 'gaussian-noise'
@@ -222,21 +247,29 @@ class LocustConfig():
     _fft_key = 'lpf-fft'
     _decimate_key = 'decimate-signal'
     
+    
+    # simulation sub keys
     _egg_filename_key = 'egg-filename'
     _record_size_key = 'record-size'
     _n_records_key = 'n-records'
+    
+    # digitizer sub keys
     _v_range_key = 'v-range'
     _v_offset_key = 'v-offset'
     
+    # gaussian noise subkeys
     _random_seed_key = 'random-seed'
     _noise_floor_psd_key = 'noise-floor-psd'
     _noise_temperature_key = 'noise-temperature'
     
+    # phase2 = kass-signal subkeys/ phase3 = array-signal subkeys
     _xml_filename_key = 'xml-filename'
     _lo_frequency_key = 'lo-frequency'
     
     #phase 3 specific
-    _array_signal_key = 'array-signal'
+    _array_signal_key = 'array-signal' #first level key
+    
+    # array-signal subkeys
     _nelements_per_strip_key = 'nelements-per-strip'
     _n_subarrays_key = 'n-subarrays'
     _zshift_array_key = 'zshift-array'
@@ -247,90 +280,78 @@ class LocustConfig():
     _n_channels_key = 'n-channels'
     
     #phase 2 specific
-    _kass_signal_key = 'kass-signal'
+    _kass_signal_key = 'kass-signal' #first level key
+    
+    # kass-signal subkeys
     _center_to_short_key = 'center-to-short'
     _center_to_antenna_key = 'center-to-antenna'
     _pitchangle_filename_key = 'pitchangle-filename'
     _pitchangle_filename = 'pitchangles.txt'
     
+    _key_dict = {   _generators_key: [],
+                    _sim_key: [ _egg_filename_key,
+                                _record_size_key,
+                                _n_records_key ],
+                    _digit_key: [_v_range_key, 
+                                 _v_offset_key],
+                    _noise_key: [_random_seed_key,
+                                 _noise_floor_psd_key,
+                                 _noise_temperature_key],
+                    _fft_key: [],
+                    _decimate_key: [],
+                    _array_signal_key: [_xml_filename_key,
+                                        _lo_frequency_key,
+                                        _nelements_per_strip_key,
+                                        _n_subarrays_key,
+                                        _zshift_array_key,
+                                        _array_radius_key,
+                                        _element_spacing_key,
+                                        _tf_receiver_bin_width_key,
+                                        _tf_receiver_filename_key,
+                                        _n_channels_key],
+                    _kass_signal_key: [_xml_filename_key,
+                                            _lo_frequency_key,
+                                            _center_to_short_key,
+                                            _center_to_antenna_key,
+                                            _pitchangle_filename_key]
+                                            }
+                                            
+    _key_to_var_dict = {_n_channels_key : 'n_channels',
+                        _egg_filename_key: 'egg_filename',
+                        _record_size_key: 'record_size',
+                        _n_records_key: 'n_records',
+                        _v_range_key: 'v_range',
+                        _lo_frequency_key: 'lo_frequency',
+                        _nelements_per_strip_key: 'n_elements_per_strip',
+                        _n_subarrays_key: 'n_subarrays',
+                        _zshift_array_key: 'zshift_array',
+                        _array_radius_key: 'array_radius',
+                        _element_spacing_key: 'element_spacing',
+                        _tf_receiver_bin_width_key: 'tf_receiver_bin_width',
+                        _tf_receiver_filename_key: 'tf_receiver_filename',
+                        _random_seed_key: 'seed_locust',
+                        _noise_floor_psd_key: 'noise_floor_psd',
+                        _noise_temperature_key: 'noise_temperature',
+                        _center_to_short_key: 'center_to_short',
+                        _center_to_antenna_key: 'center_to_antenna'}
+    
     def __init__(self,                
                 phase = 'Phase3',
-                file_name = None,
-                n_channels = None,
-                egg_filename = None,
-                record_size = None,
-                n_records = None,
-                v_range = None,
-                lo_frequency = None,
-                n_elements_per_strip = None,
-                n_subarrays = None,
-                zshift_array = None,
-                array_radius = None,
-                element_spacing = None,
-                tf_receiver_bin_width = None,
-                tf_receiver_filename = None,
-                random_seed = None,
-                noise_floor_psd = None,
-                noise_temperature = None,
-                center_to_short = None,
-                center_to_antenna = None):
-        
+                locust_file_name = None,
+                **kwargs):
 
-        self._handle_phase(phase, file_name)
+        self._handle_phase(phase, locust_file_name)
+        templateConfig = _get_json_from_file(self._file_name)
         
-        #locals() hack not possible here since we need a nested dictionary
-        self._config_dict = {}
+        
+        dict_setter = Dict2dSetter(self._key_dict, self._key_to_var_dict)
+        self._config_dict = dict_setter(kwargs)
         self._config_dict[self._generators_key] = [self._signal_key,
                                                     self._fft_key, 
                                                     self._decimate_key, 
                                                     self._digit_key]
         
-        #parameters common for all phases
-        
-        self._set(self._signal_key, self._lo_frequency_key, lo_frequency)
-        
-        self._set(self._sim_key, self._egg_filename_key, egg_filename)
-        self._set(self._sim_key, self._record_size_key, record_size)
-        self._set(self._sim_key, self._n_records_key, n_records)
-        
-        self._set(self._digit_key, self._v_range_key, v_range)
-        
-        self._set(self._noise_key, self._random_seed_key, random_seed)
-        self._set(self._noise_key, 
-                    self._noise_floor_psd_key, 
-                    noise_floor_psd)
-        self._set(self._noise_key, 
-                    self._noise_temperature_key, 
-                    noise_temperature)
-        
-        #phase 2
-        
-        self._set(self._signal_key, self._center_to_short_key, center_to_short)
-        self._set(self._signal_key, self._center_to_antenna_key, 
-                    center_to_antenna)
-                    
-        self._set(self._signal_key, self._pitchangle_filename_key, 
-                    str(OUTPUT_DIR_CONTAINER / self._pitchangle_filename))
-        
-        #phase 3
-        
-        self._set(self._sim_key, self._n_channels_key, n_channels)
-        self._set(self._signal_key, self._nelements_per_strip_key, n_elements_per_strip)
-        self._set(self._signal_key, self._n_subarrays_key, n_subarrays)
-        self._set(self._signal_key, self._zshift_array_key, zshift_array)
-        self._set(self._signal_key, self._array_radius_key, array_radius)
-        self._set(self._signal_key, self._element_spacing_key, element_spacing)
-        self._set(self._signal_key, self._tf_receiver_bin_width_key, tf_receiver_bin_width)
-        self._set(self._signal_key, self._tf_receiver_filename_key, tf_receiver_filename)
-                    
-        templateConfig = _get_json_from_file(self._file_name)
         self._finalize(templateConfig)
-        
-        # not so optimal
-        # todo: split into more functions
-        if phase=='Phase3':
-            self._prefix(self._signal_key, self._tf_receiver_filename_key, 
-                    str(self._config_path/'TransferFunctions')+'/')
 
     # -------- private part --------
     
@@ -364,8 +385,14 @@ class LocustConfig():
             
     def _prefix(self, key0, key1, value):
         
-        self._config_dict[key0][key1] =(
-                        value + self._config_dict[key0][key1].split('/')[-1])
+        sub_dict = self._config_dict.get(key0)
+        
+        if sub_dict:
+            orig = sub_dict.get(key1)
+            
+            if orig:
+                self._config_dict[key0][key1] = value + orig.split('/')[-1]
+        
             
     def _finalize(self, template_config):
         
@@ -402,10 +429,11 @@ class LocustConfig():
                 
     def _adjust_paths(self):
         
-        #self._prefix(self._signal_key, self._xml_filename_key, 
-        #                str(OUTPUT_DIR_CONTAINER) + '/')
         self._prefix(self._sim_key, self._egg_filename_key, 
                         str(OUTPUT_DIR_CONTAINER) + '/')
+                        
+        self._prefix(self._signal_key, self._tf_receiver_filename_key, 
+                    str(self._config_path/'TransferFunctions')+'/')
     
     # -------- public part --------
     
@@ -429,51 +457,53 @@ class SimConfig:
     def __init__(self,
                 sim_name,
                 phase = 'Phase3',
-                #kass_template = None,
-                locust_template = None,
-                #locust parameters
-                n_channels = None,
-                egg_filename = None,
-                record_size = None,
-                n_records = None,
-                v_range = None,
-                lo_frequency = None,
-                n_elements_per_strip = None,
-                n_subarrays = None,
-                zshift_array = None,
-                array_radius = None,
-                element_spacing = None,
-                tf_receiver_bin_width = None,
-                tf_receiver_filename = None,
-                center_to_short = None,
-                center_to_antenna = None,
-                seed_locust = None,
-                noise_floor_psd = None,
-                noise_temperature = None,
+                locust_kwargs={},
+                # ~ #kass_template = None,
+                # ~ locust_template = None,
+                # ~ #locust parameters
+                # ~ n_channels = None,
+               # ~ # egg_filename = None,
+                # ~ record_size = None,
+                # ~ n_records = None,
+                # ~ v_range = None,
+                # ~ lo_frequency = None,
+                # ~ n_elements_per_strip = None,
+                # ~ n_subarrays = None,
+                # ~ zshift_array = None,
+                # ~ array_radius = None,
+                # ~ element_spacing = None,
+                # ~ tf_receiver_bin_width = None,
+                # ~ tf_receiver_filename = None,
+                # ~ center_to_short = None,
+                # ~ center_to_antenna = None,
+                # ~ seed_locust = None,
+                # ~ noise_floor_psd = None,
+                # ~ noise_temperature = None,
                 **kwargs):
         
         self._sim_name = sim_name
         
         self._locust_config = LocustConfig(phase = phase,
-                                            file_name = locust_template,
-                                            n_channels = n_channels,
-                                            egg_filename = egg_filename,
-                                            record_size = record_size,
-                                            n_records = n_records,
-                                            v_range = v_range,
-                                            lo_frequency = lo_frequency,
-                                            n_elements_per_strip = n_elements_per_strip,
-                                            n_subarrays = n_subarrays,
-                                            zshift_array = zshift_array,
-                                            array_radius = array_radius,
-                                            element_spacing = element_spacing,
-                                            tf_receiver_bin_width = tf_receiver_bin_width,
-                                            tf_receiver_filename = tf_receiver_filename,
-                                            random_seed = seed_locust,
-                                            noise_floor_psd = noise_floor_psd,
-                                            noise_temperature = noise_temperature,
-                                            center_to_short = center_to_short,
-                                            center_to_antenna = center_to_antenna)
+                                            **locust_kwargs)
+                                            # ~ file_name = locust_template,
+                                            # ~ n_channels = n_channels,
+                                            # ~ egg_filename = '',#egg_filename,
+                                            # ~ record_size = record_size,
+                                            # ~ n_records = n_records,
+                                            # ~ v_range = v_range,
+                                            # ~ lo_frequency = lo_frequency,
+                                            # ~ n_elements_per_strip = n_elements_per_strip,
+                                            # ~ n_subarrays = n_subarrays,
+                                            # ~ zshift_array = zshift_array,
+                                            # ~ array_radius = array_radius,
+                                            # ~ element_spacing = element_spacing,
+                                            # ~ tf_receiver_bin_width = tf_receiver_bin_width,
+                                            # ~ tf_receiver_filename = tf_receiver_filename,
+                                            # ~ random_seed = seed_locust,
+                                            # ~ noise_floor_psd = noise_floor_psd,
+                                            # ~ noise_temperature = noise_temperature,
+                                            # ~ center_to_short = center_to_short,
+                                            # ~ center_to_antenna = center_to_antenna)
                                         
         self._kass_config = KassConfig( phase = phase, **kwargs)
     
@@ -505,7 +535,6 @@ class SimConfig:
             config = json.load(infile)
             
             instance._sim_name = config['sim-name']
-            #accessing 'private' data members; don't do that at home! ;)
             instance._locust_config._config_dict = config['locust-config']
             instance._kass_config._config_dict = config['kass-config']
             
