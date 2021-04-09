@@ -61,12 +61,13 @@ class KassConfig:
     
     _val_max_expression = ' value_max='
     
+    _expression_dict_constants = { 'output_path': _output_path_expression,
+                                   'config_path': _config_path_expression}
+    
     # these dictionaries define the accepted parameters
     _expression_dict_simple = {'seed_kass': _seed_expression,
                                't_max': _t_max_expression,
                                'geometry': _geometry_expression,
-                               'output_path': _output_path_expression,
-                               'config_path': _config_path_expression,
                                'energy': _energy_expression }
                        
     _expression_dict_complex = {'x_min': _x_val_expression,
@@ -83,8 +84,6 @@ class KassConfig:
         
         self._handle_phase(phase, kass_file_name)
         self._handle_seed()
-        self._config_dict['output_path'] = str(OUTPUT_DIR_CONTAINER)
-        self._config_dict['config_path'] = str(self._config_path)
         
         self._xml = _get_xml_from_file(self._file_name)
         self._add_defaults()
@@ -159,23 +158,36 @@ class KassConfig:
                 self._config_dict[key] = minVal
                 self._config_dict[key[:-3]+'max'] = maxVal
      
+    def _replace_simple_val(self, expression, value, string):
+        
+        return re.sub( expression + self._match_all_regex.pattern,
+                       expression +'"'+str(value)+'"', string)
+                       
+    def _replace_complex_val(self, expression, val_min, val_max, string):
+        
+        return re.sub( ( expression 
+                        + self._match_all_regex.pattern
+                        + self._val_max_expression
+                        + self._match_all_regex.pattern),
+                        ( expression
+                        + '"'+str(val_min)+'"'
+                        + self._val_max_expression
+                        + '"'+str(val_max)+'"'), string)
+    
     def _replace_simple(self, key, string):
         
-        return re.sub(self._expression_dict_simple[key]\
-                        +self._match_all_regex.pattern,
-                        self._expression_dict_simple[key]\
-                        +'"'+str(self._config_dict[key])+'"', string)
+        expression = self._expression_dict_simple[key]
+        val = self._config_dict[key]
+        
+        return self._replace_simple_val(expression, val, string)
         
     def _replace_complex(self, key, string):
         
-        return re.sub(self._expression_dict_complex[key]\
-                        +self._match_all_regex.pattern\
-                        +self._val_max_expression\
-                        +self._match_all_regex.pattern,
-                        self._expression_dict_complex[key]\
-                        +'"'+str(self._config_dict[key])+'"'\
-                        +self._val_max_expression\
-                        +'"'+str(self._config_dict[key[:-3]+'max'])+'"', string)
+        expression = self._expression_dict_complex[key]
+        val_min = self._config_dict[key]
+        val_max = self._config_dict[key[:-3]+'max']
+        
+        return self._replace_complex_val(expression, val_min, val_max, string)
         
     def _prefix(self, key, value):
         
@@ -185,15 +197,28 @@ class KassConfig:
         
         self._prefix('geometry', '[config_path]/Trap/')
         
+    def _replace_constants(self, string):
+        
+        string = self._replace_simple_val(
+                                self._expression_dict_constants['output_path'], 
+                                str(OUTPUT_DIR_CONTAINER), string)
+        string = self._replace_simple_val(
+                                self._expression_dict_constants['config_path'], 
+                                str(self._config_path), string)
+                                
+        return string
                         
     def _replace_all(self):
         
         xml = self._xml
+        
         for key in self._expression_dict_complex:
             xml = self._replace_complex(key, xml)
             
         for key in self._expression_dict_simple:
             xml = self._replace_simple(key, xml)
+            
+        xml = self._replace_constants(xml)
             
         return xml
 
@@ -459,6 +484,7 @@ class SimConfig:
                     locust_file_name = None, **kwargs):
         
         self._sim_name = sim_name
+        self._phase = phase
         
         self._locust_config = LocustConfig(phase = phase, 
                                            locust_file_name = locust_file_name, 
@@ -475,7 +501,8 @@ class SimConfig:
     def to_json(self, file_name):
         
         with open(file_name, 'w') as outfile:
-            json.dump({ 'sim-name': self._sim_name, 
+            json.dump({ 'sim-name': self._sim_name,
+                        'phase' : self._phase,
                         'kass-config': self._kass_config, 
                         'locust-config': self._locust_config}, outfile, 
                         indent=2, default=lambda x: x.config_dict)
@@ -484,18 +511,21 @@ class SimConfig:
     def to_dict(self):
         
         return {'sim-name': self._sim_name,
+                'phase': self._phase,
                 **self._locust_config.config_dict, 
                 **self._kass_config.config_dict}
             
     @classmethod
     def from_json(cls, file_name):
         
-        instance = cls('')
-        
         with open(file_name, 'r') as infile:
             config = json.load(infile)
             
-            instance._sim_name = config['sim-name']
+            sim_name = config['sim-name']
+            phase = config['phase']
+            
+            instance = cls(sim_name, phase=phase)
+            
             instance._locust_config._config_dict = config['locust-config']
             instance._kass_config._config_dict = config['kass-config']
             
