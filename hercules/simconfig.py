@@ -315,7 +315,8 @@ class LocustConfig:
                                             _center_to_antenna_key,
                                             _pitchangle_filename_key]
                                             }
-                                            
+    
+    #this defines the accepted parameters
     _key_to_var_dict = {_n_channels_key : 'n_channels',
                         _egg_filename_key: 'egg_filename',
                         _record_size_key: 'record_size',
@@ -454,58 +455,18 @@ class LocustConfig:
 
 class SimConfig:
     
-    def __init__(self,
-                sim_name,
-                phase = 'Phase3',
-                locust_kwargs={},
-                # ~ #kass_template = None,
-                # ~ locust_template = None,
-                # ~ #locust parameters
-                # ~ n_channels = None,
-               # ~ # egg_filename = None,
-                # ~ record_size = None,
-                # ~ n_records = None,
-                # ~ v_range = None,
-                # ~ lo_frequency = None,
-                # ~ n_elements_per_strip = None,
-                # ~ n_subarrays = None,
-                # ~ zshift_array = None,
-                # ~ array_radius = None,
-                # ~ element_spacing = None,
-                # ~ tf_receiver_bin_width = None,
-                # ~ tf_receiver_filename = None,
-                # ~ center_to_short = None,
-                # ~ center_to_antenna = None,
-                # ~ seed_locust = None,
-                # ~ noise_floor_psd = None,
-                # ~ noise_temperature = None,
-                **kwargs):
+    def __init__(self, sim_name, phase = 'Phase3', kass_file_name = None, 
+                    locust_file_name = None, **kwargs):
         
         self._sim_name = sim_name
         
-        self._locust_config = LocustConfig(phase = phase,
-                                            **locust_kwargs)
-                                            # ~ file_name = locust_template,
-                                            # ~ n_channels = n_channels,
-                                            # ~ egg_filename = '',#egg_filename,
-                                            # ~ record_size = record_size,
-                                            # ~ n_records = n_records,
-                                            # ~ v_range = v_range,
-                                            # ~ lo_frequency = lo_frequency,
-                                            # ~ n_elements_per_strip = n_elements_per_strip,
-                                            # ~ n_subarrays = n_subarrays,
-                                            # ~ zshift_array = zshift_array,
-                                            # ~ array_radius = array_radius,
-                                            # ~ element_spacing = element_spacing,
-                                            # ~ tf_receiver_bin_width = tf_receiver_bin_width,
-                                            # ~ tf_receiver_filename = tf_receiver_filename,
-                                            # ~ random_seed = seed_locust,
-                                            # ~ noise_floor_psd = noise_floor_psd,
-                                            # ~ noise_temperature = noise_temperature,
-                                            # ~ center_to_short = center_to_short,
-                                            # ~ center_to_antenna = center_to_antenna)
+        self._locust_config = LocustConfig(phase = phase, 
+                                           locust_file_name = locust_file_name, 
+                                           **kwargs)
                                         
-        self._kass_config = KassConfig( phase = phase, **kwargs)
+        self._kass_config = KassConfig( phase = phase, 
+                                        kass_file_name = kass_file_name, 
+                                        **kwargs)
     
     @property
     def sim_name(self):
