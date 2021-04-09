@@ -79,8 +79,7 @@ class KassConfig:
                 phase = 'Phase3',
                 kass_file_name = None,
                 **kwargs):
-        
-        #self._config_dict = kwargs
+    
         self._read_config_dict(kwargs)
         
         self._handle_phase(phase, kass_file_name)
@@ -94,15 +93,11 @@ class KassConfig:
     
     def _read_config_dict(self, config_dict):
         
-        self._config_dict = {}
-        
-        for key in config_dict:
-            key_min = key[:-3]+'min'
-            accepted = ( key in self._expression_dict_simple
-                         or key in self._expression_dict_complex
-                         or key_min in self._expression_dict_complex) 
-            if accepted:
-                self._config_dict[key] = config_dict[key]
+        accepted_keys = self.get_accepted_keys()
+                
+        self._config_dict = {k:config_dict[k] 
+                            for k 
+                            in set(config_dict).intersection(accepted_keys)}
     
     def _handle_phase(self, phase, file_name):
     
@@ -240,6 +235,17 @@ class KassConfig:
     @property
     def config_dict(self):
         return self._config_dict 
+        
+    @classmethod
+    def get_accepted_keys(cls):
+        
+        keys = list(cls._expression_dict_simple.keys())
+        keys = keys + list(cls._expression_dict_complex.keys())
+        
+        for key in cls._expression_dict_complex:
+            keys.append(key[:-3]+'max')
+            
+        return keys
     
     def make_config_file(self, output_path):
         
@@ -472,17 +478,38 @@ class LocustConfig:
         name = path.name
         self._set(self._signal_key, self._xml_filename_key, 
                     str(OUTPUT_DIR_CONTAINER / name))
+    
+    @classmethod
+    def get_accepted_keys(cls):
+            
+        return list(cls._key_to_var_dict.values())
                     
     def make_config_file(self, output_path):
         
         with open(output_path, 'w') as outFile:
             json.dump(self._config_dict, outFile, indent=2)
+
     
+def _get_unknown_parameters(kwargs):
+    
+    accepted_parameters = ( KassConfig.get_accepted_keys() 
+                            + LocustConfig.get_accepted_keys() )
+                            
+    return set(kwargs.keys()).difference(accepted_parameters)
+    
+def trigger_unknown_parameter_warnings(kwargs):
+    
+    unknown_parameters = _get_unknown_parameters(kwargs)
+    
+    for parameter in unknown_parameters:
+        print('WARNING - unknown parameter "{}" is ignored'.format(parameter))
 
 class SimConfig:
     
     def __init__(self, sim_name, phase = 'Phase3', kass_file_name = None, 
                     locust_file_name = None, **kwargs):
+                        
+        trigger_unknown_parameter_warnings(kwargs)
         
         self._sim_name = sim_name
         self._phase = phase

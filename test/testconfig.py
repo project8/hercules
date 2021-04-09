@@ -13,7 +13,8 @@ module_dir = Path(__file__).parent.absolute()
 
 config = he.SimConfig('some_name', n_channels=15, seed_locust=1, v_range=7.0, n_subarrays=3,
                     egg_filename='x.egg', seed_kass =12534, x_min=0.05e-6, 
-                    x_max=0.1e-5, geometry='FreeSpaceGeometry_V00_00_10.xml')
+                    x_max=0.1e-5, geometry='FreeSpaceGeometry_V00_00_10.xml',
+                    unknown_parameter1 = 'foo', unknown_parameter2 = 'bar' )
 
 json_file = module_dir/'SimConfig.json'
 locust_file = module_dir/'Locust.json'
