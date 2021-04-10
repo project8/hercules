@@ -374,11 +374,12 @@ class LocustConfig:
                 locust_file_name = None,
                 **kwargs):
 
+        self._config_dict = _set_dict_2d(self._key_dict, self._key_to_var_dict, 
+                                            kwargs)
+                                            
         self._handle_phase(phase, locust_file_name)
         templateConfig = _get_json_from_file(self._file_name)
         
-        self._config_dict = _set_dict_2d(self._key_dict, self._key_to_var_dict, 
-                                            kwargs)
         self._config_dict[self._generators_key] = [self._signal_key,
                                                     self._fft_key, 
                                                     self._decimate_key, 
@@ -405,6 +406,9 @@ class LocustConfig:
             self._signal_key = (self._array_signal_key if phase=='Phase3' else 
                                     self._kass_signal_key)
             
+            if phase=='Phase2':
+                self._set(self._signal_key, self._pitchangle_filename_key, 
+                        str(OUTPUT_DIR_CONTAINER / self._pitchangle_filename))
         else:
             raise ValueError('Only "Phase2" or "Phase3" are supported')
 
