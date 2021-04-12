@@ -228,7 +228,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         
         """
         
-        subprocess.Popen('module load dSQ', shell=True).wait()
+        module = 'module load dSQ;'
         
         dsq = 'dsq --requeue --cpus-per-task=2 --submit'
         job_file = '--job-file ' + str(self._joblist)
@@ -239,9 +239,9 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         job_status = '--status-dir ' + str(self._working_dir)
         job_output = '--output /dev/null'
         
-        cmd = _char_concatenate(' ', dsq, job_file, job_partition, job_limit,
-                                job_memory, job_timelimit, job_status,
-                                job_output)
+        cmd = _char_concatenate(' ', module, dsq, job_file, job_partition, 
+                                job_limit, job_memory, job_timelimit, 
+                                job_status, job_output)
         
         subprocess.Popen(cmd, shell=True).wait()
         
