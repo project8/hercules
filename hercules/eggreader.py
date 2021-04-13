@@ -13,6 +13,9 @@ from scipy.fft import fft, fftshift, fftfreq
 
 
 def _apply_DFT(data, dft_window):
+    """
+    Helper function that takes FFT of data on the last axis
+    """
 
     mean = np.mean(data, axis=-1, keepdims=True)
 
@@ -42,8 +45,6 @@ class LocustP3File:
         self._get_attributes()
 
     def _get_attributes(self):
-        #not a full list of attributes -> expand
-
         ### Attrs see https://monarch.readthedocs.io/en/latest/EggStandard.v3.2.0.html#file-structure
         # A dict for file attrs
         self._file_attrs = self._input_file.attrs
@@ -94,8 +95,6 @@ class LocustP3File:
             bit_depth] * voltage_range + voltage_offset
         return result
 
-    # -------- public part -------- #
-
     def load_ts_stream(self, stream: int = 0):
         """
         Load the time series in a stream by stream basis. Only a single stream is allowed.
@@ -104,17 +103,29 @@ class LocustP3File:
         """
         try:
             s = self._input_file['streams']["stream{}".format(stream)]
+            attr = self.get_stream_attrs(stream)
         except KeyError as kerr:
             print(kerr)
         except Exception as e:
             print(e)
             raise
-        attr = self.get_stream_attrs(stream)
-        # Rate from MHz -> Hz
+
+        channels, data = self._read_ts(s, attr)
+        result = {}
+        for ch in channels:
+            result[ch] = self._convert_to_voltage(data[:, :, ch, :], ch)
+
+        return result
+
+    def _read_ts(self, s, attr):
+        """
+        Helper method that returns a channel list and raw time series in np.array of shape:
+        (n_acquisitions, n_records, n_channels, record_size)
+        """
+
         n_acq = attr['n_acquisitions']
         channels = attr['channels']
         ch_format = attr['channel_format']
-
         data = []
         for i in range(n_acq):
             acq = s['acquisitions']['%s' % i]
@@ -133,13 +144,28 @@ class LocustP3File:
                 else:
                     raise RuntimeError("Invalid channel format")
             data.append(temp)
-
         data = np.asarray_chkfinite(data)
-        result = {}
-        for ch in channels:
-            result[ch] = self._convert_to_voltage(data[:, :, ch, :], ch)
+        return channels, data
 
-        return result
+    def quick_load_ts_stream(self, stream: int = 0):
+        """
+        Load the time series in default format (numpy array) with shape:
+        (n_acquisitions, n_channels, n_records * record_size)
+        """
+        try:
+            s = self._input_file['streams']["stream{}".format(stream)]
+            attr = self.get_stream_attrs(stream)
+        except KeyError as kerr:
+            print(kerr)
+        except Exception as e:
+            print(e)
+            raise
+
+        _, data = self._read_ts(s, attr)
+        # transpose axis 1 and 2 and concatenate all records
+        data = np.swapaxes(data, 1, 2)
+        data = np.reshape(data, (data.shape[:2], -1))
+        return data
 
     def load_fft_stream(self, dft_window: int = 4096, stream: int = 0):
         """
@@ -147,19 +173,19 @@ class LocustP3File:
         dft_window: sample size for each DFT slice, defaults to 4096.
         Structure is the same as that of the timeseries.
         """
+        ts = self.load_ts_stream(stream=stream)
+        result = {}
+
         attr = self.get_stream_attrs(stream)
         # Rate from MHz -> Hz
         acq_rate = attr['acquisition_rate'] * 1e6
         channels = attr['channels']
 
-        ts = self.load_ts_stream(stream=stream)
-        result = {}
-
         for ch in channels:
             ts_ch = ts[ch]
             n_slices = int(ts_ch.shape[-1] / dft_window)
             ts_sliced = ts_ch[:, :, :n_slices * dft_window].reshape(
-                (ts_ch.shape[0], ts_ch.shape[1], n_slices, -1))
+                (ts_ch.shape[:2], n_slices, -1))
 
             # Apply DFT to sliced ts and return DFT in the original shape
             # freq is a single array since acq_rate is the same for all data in the stream
@@ -171,6 +197,23 @@ class LocustP3File:
 
         frequency = fftshift(fftfreq(dft_window, d=1 / acq_rate))
         return frequency, result
+
+    def quick_load_fft_stream(self, dft_window: int = 4096, stream: int = 0):
+        """
+        Load FFT in default format (same as quick load time series)
+        """
+        ts = self.quick_load_ts_stream(stream)
+        attr = self.get_stream_attrs(stream)
+        # Rate from MHz -> Hz
+        acq_rate = attr['acquisition_rate'] * 1e6
+        n_slices = int(ts.shape[-1] / dft_window)
+        # Discard extra data points
+        ts_sliced = ts[:, :, :n_slices * dft_window].reshape(
+            (ts.shape[:2], n_slices, -1))
+        data_freq = _apply_DFT(ts_sliced, dft_window)
+
+        frequency = fftshift(fftfreq(dft_window, d=1 / acq_rate))
+        return frequency, data_freq
 
     @property
     def n_channels(self):
