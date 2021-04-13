@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 matplotlib.use("Agg")  # No GUI
 
 
-class LocustTest(unittest.TestCase):
+class EggReaderTest(unittest.TestCase):
     def setUp(self) -> None:
         n_ch = 3
         r_range = np.linspace(0.002, 0.008, 2)
