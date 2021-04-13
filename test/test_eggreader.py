@@ -15,10 +15,12 @@ FILE_DIR = Path(__file__).parent.absolute()
 ROOT_DIR = FILE_DIR.parent
 sys.path.insert(0, ROOT_DIR)
 
+import matplotlib
 import unittest
 import hercules as he
 import numpy as np
 import matplotlib.pyplot as plt
+matplotlib.use("Agg")  # No GUI
 
 
 class LocustTest(unittest.TestCase):
@@ -51,7 +53,8 @@ class LocustTest(unittest.TestCase):
                         z_max=0,
                         theta_min=theta,
                         theta_max=theta,
-                        t_max=5e-8,
+                        t_max=5e-7,
+                        record_size=3000,
                         v_range=3.0e-7,
                         geometry='FreeSpaceGeometry_V00_00_10.xml')
                     test_data_dict[name] = config
@@ -63,23 +66,23 @@ class LocustTest(unittest.TestCase):
         if not self.test_data_dir.is_dir():
             print("Test directory not found. Creating one...")
             os.mkdir(test_data_dir)
-        sub_dir_list = [d for d in test_data_dir.iterdir() if d.is_dir()]
+        sub_dir_list = [d.parts[-1] for d in test_data_dir.iterdir() if d.is_dir()]
         missing_dir_list = list(
             set(self.test_data_dict.keys()) - set(sub_dir_list))
         print(
             "The following test data are missing: {}".format(missing_dir_list))
 
         # Create missing test data
+        # Note: if data is missing, must run the tests in cmd line to create the data
         for l in missing_dir_list:
             print("Creating test data: {}".format(l))
             sim = he.KassLocustP3(str(test_data_dir))
             sim(self.test_data_dict[l])
 
     def test_ts_stream(self) -> None:
-        return None
-        # for k in self.test_data_dict.keys():
-        #     self._load_ts_stream(k)
-        #     self._quick_load_ts_stream(k)
+        for k in self.test_data_dict.keys():
+            self._load_ts_stream(k)
+            self._quick_load_ts_stream(k)
 
     def _load_ts_stream(self, name) -> None:
         # Plot some specific test data
@@ -98,8 +101,6 @@ class LocustTest(unittest.TestCase):
             ax.set_title(title)
 
             for i in channels:
-                if i % 10 != 0:
-                    continue
                 # Acq 0 and record 0
                 data_ch = data[i][0, 0, :]
                 ax.plot(
@@ -132,8 +133,6 @@ class LocustTest(unittest.TestCase):
             ax.set_title(title)
 
             for i in range(n_ch):
-                if i % 10 != 0:
-                    continue
                 # Acq 0
                 data_ch = data[0, i, :]
                 ax.plot(
@@ -143,6 +142,70 @@ class LocustTest(unittest.TestCase):
                 )
             ax.set_xlabel(r"Time $[s]$")
             ax.set_ylabel(r"DAQ V $[V]$")
+            ax.legend(loc="best")
+            self._save_fig(fig, title)
+
+    def test_fft_stream(self) -> None:
+        for k in self.test_data_dict.keys():
+            self._load_fft_stream(k)
+            self._quick_load_fft_stream(k)
+
+    def _load_fft_stream(self, name) -> None:
+        # Plot some specific test data
+        file_name = self.test_data_dir.joinpath(name).joinpath(
+            "simulation.egg")
+        file = he.LocustP3File(str(file_name))
+        n_streams = file.n_streams
+
+        for s in range(n_streams):
+            freq, data = file.load_fft_stream(256, s)
+            channels = data.keys()
+
+            fig, ax = plt.subplots()
+            title = "FFT DAQ Stream {} of {}".format(s, name)
+            ax.set_title(title)
+
+            for i in channels:
+                # Acq 0 and record 0
+                data_ch = data[i][0, 0, :]
+                ax.plot(
+                    freq,
+                    np.abs(np.mean(data_ch, axis=0)),
+                    label="Ch {}".format(i),
+                )
+            ax.set_xlabel(r"Frequency $[Hz]$")
+            ax.set_ylabel(r"FFT")
+            ax.legend(loc="best")
+            self._save_fig(fig, title)
+
+    def _quick_load_fft_stream(self, name) -> None:
+        # Plot some specific test data
+        file_name = self.test_data_dir.joinpath(name).joinpath(
+            "simulation.egg")
+        file = he.LocustP3File(str(file_name))
+        n_streams = file.n_streams
+        n_ch = file.n_channels
+
+        for s in range(n_streams):
+            freq, data = file.quick_load_fft_stream(256, s)
+
+            n_acq = file.get_stream_attrs(s)['n_acquisitions']
+            self.assertEqual((n_acq, n_ch), data.shape[:2])
+
+            fig, ax = plt.subplots()
+            title = "FFT Quick DAQ Stream {} of {}".format(s, name)
+            ax.set_title(title)
+
+            for i in range(n_ch):
+                # Acq 0
+                data_ch = data[0, i, :]
+                ax.plot(
+                    freq,
+                    np.abs(np.mean(data_ch, axis=0)),
+                    label="Ch {}".format(i),
+                )
+            ax.set_xlabel(r"Frequency $[Hz]$")
+            ax.set_ylabel(r"FFT")
             ax.legend(loc="best")
             self._save_fig(fig, title)
 
@@ -164,7 +227,4 @@ class LocustTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-### TODO: Verify that time series are loaded properly (shape is correct and plot)
-### TODO: Verify that FFT are generated properly (shape is correct and plot)
+    
