@@ -25,7 +25,7 @@ class ConfigTest(unittest.TestCase):
         r_range = np.linspace(0.002, 0.008, 8)
         theta_range = np.linspace(89.7, 90.0, 30)
 
-        r_phi_range = np.linspace(0, 2 * np.pi / 60, 1)
+        r_phi_range = np.linspace(0, 2 * np.pi / n_channels, 1)
 
         config_list = []
 
