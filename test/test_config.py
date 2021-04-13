@@ -21,7 +21,7 @@ class ConfigTest(unittest.TestCase):
 
     def test_generate_configs(self) -> None:
         # Generates a list of config
-        n_channels = 60
+        n_channels = 3
         r_range = np.linspace(0.002, 0.008, 8)
         theta_range = np.linspace(89.7, 90.0, 30)
 
