@@ -79,6 +79,11 @@ class LocustTest(unittest.TestCase):
             sim = he.KassLocustP3(str(test_data_dir))
             sim(self.test_data_dict[l])
 
+    def test_locust(self) -> None:
+        # Test sim generation (done in setUp), substitutes regular locust test
+        # This test is always true.
+        self.assertTrue(True)
+
     def test_ts_stream(self) -> None:
         for k in self.test_data_dict.keys():
             self._load_ts_stream(k)
