@@ -13,7 +13,7 @@ import subprocess
 from abc import ABC, abstractmethod
 import concurrent.futures as cf
 from tqdm import tqdm
-import shutil
+# import shutil
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME, KASS_CONFIG_NAME, SIM_CONFIG_NAME, 
@@ -116,15 +116,17 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
     
     _working_dir_container = PosixPath('/') / 'workingdir'
     _command_script_name = 'locustcommands.sh'
-    _container = CONFIG.container
-    
-    def __init__(self, working_dir, direct=True):
-                            
-        AbstractKassLocustP3.__init__(self, working_dir, direct)
-        self._gen_command_script()
-    
-    def __call__(self, config_list):
-        
+
+
+    def __init__(self, working_dir, config, direct=True):
+
+        AbstractKassLocustP3.__init__(self, working_dir, config, direct)
+        self._container = config.container
+        self._max_workers = int(config.desktop_parallel_jobs)
+        # self._gen_command_script()
+
+    def __call__(self, sim_config_list):
+
         print('Running jobs in Locust')
         max_workers = int(CONFIG.desktop_parallel_jobs)
         with cf.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -144,9 +146,10 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         kass_file = output_dir / KASS_CONFIG_NAME
         config_dump = output_dir / SIM_CONFIG_NAME
 
-        config.make_config_file(locust_file, kass_file)
-        config.to_json(config_dump)
-        
+        sim_config.make_config_file(locust_file, kass_file)
+        sim_config.to_json(config_dump)
+        self._gen_command_script(output_dir)
+
         cmd = self._assemble_command(output_dir)
         
         log_dir_container = OUTPUT_DIR_CONTAINER / config.sim_name
@@ -163,30 +166,33 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         docker_run = 'docker run -it --rm'
         
         bash_command = ('"'
-                       + str(self._working_dir_container/self._command_script_name)
+                       + str(OUTPUT_DIR_CONTAINER/self._command_script_name)
                        + ' '
                        + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME)
                        + '"')
                        
         docker_command = '/bin/bash -c ' + bash_command
-        
-        share_working_dir = _gen_shared_dir_string(self._working_dir, 
-                                            self._working_dir_container)
-                           
+
+        # share_working_dir = _gen_shared_dir_string(self._working_dir,
+        #                                     self._working_dir_container)
+
         share_output_dir = _gen_shared_dir_string(output_dir,
                                             OUTPUT_DIR_CONTAINER)
                                             
         share_hexbug_dir = _gen_shared_dir_string(HEXBUG_DIR, HEXBUG_DIR_CONTAINER)
-        
-        
-        cmd = _char_concatenate(' ', docker_run, share_working_dir, 
-                                    share_output_dir, share_hexbug_dir, 
-                                    self._container, docker_command)
-        
+
+
+        # cmd = _char_concatenate(' ', docker_run, share_working_dir,
+        #                             share_output_dir, share_hexbug_dir,
+        #                             self._container, docker_command)
+        cmd = _char_concatenate(' ', docker_run,
+                            share_output_dir, share_hexbug_dir,
+                            self._container, docker_command)
+
         return cmd
-        
-    def _gen_command_script(self):
-        
+
+    def _gen_command_script(self, output_dir):
+
         shebang = '#!/bin/bash'
         p8_env = _char_concatenate(' ', 'source', 
                                  str(self._p8_compute_dir/'setup.sh'))
@@ -195,8 +201,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         locust = 'LocustSim config=$1'
         
         commands = _char_concatenate('\n', shebang, p8_env, kasper_env, locust)
-        
-        script = self._working_dir/self._command_script_name
+
+        script = output_dir/self._command_script_name
         with open(script, 'w') as out_file:
             out_file.write(commands)
             
