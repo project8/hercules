@@ -8,12 +8,12 @@ Date: February 19, 2021
 
 __all__ = ['KassLocustP3']
 
+from hercules.simconfig import SimConfig
 from pathlib import Path, PosixPath
 import subprocess
 from abc import ABC, abstractmethod
 import concurrent.futures as cf
 from tqdm import tqdm
-# import shutil
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME, KASS_CONFIG_NAME, SIM_CONFIG_NAME, 
@@ -118,11 +118,11 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
     _command_script_name = 'locustcommands.sh'
 
 
-    def __init__(self, working_dir, config, direct=True):
+    def __init__(self, working_dir, direct=True):
 
-        AbstractKassLocustP3.__init__(self, working_dir, config, direct)
-        self._container = config.container
-        self._max_workers = int(config.desktop_parallel_jobs)
+        AbstractKassLocustP3.__init__(self, working_dir, direct)
+        self._container = CONFIG.container
+        self._max_workers = int(CONFIG.desktop_parallel_jobs)
         # self._gen_command_script()
 
     def __call__(self, sim_config_list):
@@ -131,15 +131,15 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         max_workers = int(CONFIG.desktop_parallel_jobs)
         with cf.ThreadPoolExecutor(max_workers=max_workers) as executor:
             
-            futures = [executor.submit(self._submit, config) 
-                       for config in config_list]
+            futures = [executor.submit(self._submit, sim_config) 
+                       for sim_config in sim_config_list]
                        
             for future in tqdm(cf.as_completed(futures), total=len(futures)):
                 future.result()
     
-    def _submit(self, config):
+    def _submit(self, sim_config: SimConfig):
         
-        output_dir = self._working_dir / config.sim_name
+        output_dir = self._working_dir / sim_config.sim_name
         output_dir.mkdir(parents=True, exist_ok=True)
         
         locust_file = output_dir / LOCUST_CONFIG_NAME
@@ -151,8 +151,6 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         self._gen_command_script(output_dir)
 
         cmd = self._assemble_command(output_dir)
-        
-        log_dir_container = OUTPUT_DIR_CONTAINER / config.sim_name
         
         with open(output_dir/'log.out', 'w+') as log, open(output_dir/'log.err', 'w+') as err:
             p = subprocess.Popen(cmd, shell=True, stdout=log, stderr=err)
@@ -251,17 +249,17 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         
         subprocess.Popen(cmd, shell=True).wait()
         
-    def _add_job(self, config):
+    def _add_job(self, sim_config: SimConfig):
         
-        output_dir = self._working_dir / config.sim_name
+        output_dir = self._working_dir / sim_config.sim_name
         output_dir.mkdir(parents=True, exist_ok=True)
         
         locust_file = output_dir / LOCUST_CONFIG_NAME
         kass_file = output_dir / KASS_CONFIG_NAME
         config_dump = output_dir / SIM_CONFIG_NAME
 
-        config.make_config_file(locust_file, kass_file)
-        config.to_json(config_dump)
+        sim_config.make_config_file(locust_file, kass_file)
+        sim_config.to_json(config_dump)
         
         self._gen_locust_script(output_dir)
         cmd = self._assemble_command(output_dir)
