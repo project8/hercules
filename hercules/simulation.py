@@ -116,20 +116,17 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
     
     _working_dir_container = PosixPath('/') / 'workingdir'
     _command_script_name = 'locustcommands.sh'
-
+    _container = CONFIG.container
+    _max_workers = int(CONFIG.desktop_parallel_jobs)
 
     def __init__(self, working_dir, direct=True):
 
         AbstractKassLocustP3.__init__(self, working_dir, direct)
-        self._container = CONFIG.container
-        self._max_workers = int(CONFIG.desktop_parallel_jobs)
-        # self._gen_command_script()
 
     def __call__(self, sim_config_list):
 
         print('Running jobs in Locust')
-        max_workers = int(CONFIG.desktop_parallel_jobs)
-        with cf.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with cf.ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             
             futures = [executor.submit(self._submit, sim_config) 
                        for sim_config in sim_config_list]
