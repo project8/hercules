@@ -191,11 +191,13 @@ class EggReaderTest(unittest.TestCase):
         n_streams = file.n_streams
         n_ch = file.n_channels
 
+        window_size = 256
         for s in range(n_streams):
-            freq, data = file.quick_load_fft_stream(256, s)
+            freq, data = file.quick_load_fft_stream(window_size, s)
 
             n_acq = file.get_stream_attrs(s)['n_acquisitions']
-            self.assertEqual((n_acq, n_ch), data.shape[:2])
+            self.assertEqual(n_acq, data.shape[0])
+            self.assertEqual((n_ch, window_size), data.shape[2:])
 
             fig, ax = plt.subplots()
             title = "FFT Quick DAQ Stream {} of {}".format(s, name)
