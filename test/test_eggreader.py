@@ -5,15 +5,11 @@ Date: Apr. 12, 2021
 
 """
 
-# Add module to sys path for detection in case the user has yet installed the module
-import sys
 import os
 from pathlib import Path
 
 from matplotlib.figure import Figure
 FILE_DIR = Path(__file__).parent.absolute()
-ROOT_DIR = FILE_DIR.parent
-sys.path.insert(0, ROOT_DIR)
 
 import matplotlib
 import unittest
