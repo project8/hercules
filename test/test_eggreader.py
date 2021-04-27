@@ -201,7 +201,7 @@ class EggReaderTest(unittest.TestCase):
 
             for i in range(n_ch):
                 # Acq 0
-                data_ch = data[0, i, :]
+                data_ch = data[0, :, i]
                 ax.plot(
                     freq,
                     np.abs(np.mean(data_ch, axis=0)),
