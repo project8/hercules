@@ -165,6 +165,8 @@ class LocustP3File:
         # transpose axis 1 and 2 and concatenate all records
         data = np.swapaxes(data, 1, 2)
         data = np.reshape(data, data.shape[:2] + (-1,))
+        data = np.ascontiguousarray(data)
+
         return data
 
     def load_fft_stream(self, dft_window: int = 4096, stream: int = 0):
@@ -211,6 +213,9 @@ class LocustP3File:
         ts_sliced = ts[:, :, :n_slices * dft_window].reshape(
             (ts.shape[0], ts.shape[1], n_slices, -1))
         data_freq = _apply_DFT(ts_sliced, dft_window)
+        
+        data_freq = data_freq.transpose(0, 2, 1, 3)
+        data_freq = np.ascontiguousarray(data_freq)
 
         frequency = fftshift(fftfreq(dft_window, d=1 / acq_rate))
         return frequency, data_freq
