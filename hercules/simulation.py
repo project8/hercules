@@ -20,20 +20,19 @@ from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         CONFIG)
 
 def _gen_shared_dir_string(dir_outside, dir_container):
-    """Return string for the docker argument for sharing a directory.
-    
-    Parameters
-    ----------
-    dir_outside : Path 
-        The path of the host directory that should be shared
-    dir_container : Path
-        The path of the container directory
-    
-    Returns
-    -------
-    str
-        The string for the docker argument
-    """
+    # Return string for the docker argument for sharing a directory.
+    # 
+    # Parameters
+    # ----------
+    # dir_outside : Path 
+    #     The path of the host directory that should be shared
+    # dir_container : Path
+    #     The path of the container directory
+    # 
+    # Returns
+    # -------
+    # str
+    #     The string for the docker argument
     
     return ('-v '
                + str(dir_outside)
@@ -41,20 +40,20 @@ def _gen_shared_dir_string(dir_outside, dir_container):
                + str(dir_container))
                
 def _gen_shared_dir_string_singularity(dir_outside, dir_container):
-    """Return string for the singularity argument for sharing a directory.
-    
-    Parameters
-    ----------
-    dir_outside : Path
-        The path of the host directory that should be shared
-    dir_container : Path
-        The path of the container directory
-    
-    Returns
-    -------
-    str
-        The string for the singularity argument
-    """
+    # Return string for the singularity argument for sharing a directory.
+    # 
+    # Parameters
+    # ----------
+    # dir_outside : Path
+    #     The path of the host directory that should be shared
+    # dir_container : Path
+    #     The path of the container directory
+    # 
+    # Returns
+    # -------
+    # str
+    #     The string for the singularity argument
+    # 
     
     return ('--bind '
                + str(dir_outside)
@@ -62,23 +61,23 @@ def _gen_shared_dir_string_singularity(dir_outside, dir_container):
                + str(dir_container))
                
 def _char_concatenate(fill, *strings):
-    """Return a string concatenation of the inputs.
-    
-    This function concatenates an arbitrary number of strings with another
-    string in between.
-    
-    Parameters
-    ----------
-    fill : str
-        String used to fill in between strings
-    *strings : list of str
-        Arbitrary number of strings
-    
-    Returns
-    -------
-    str
-        The concatenated strings
-    """
+    # Return a string concatenation of the inputs.
+    # 
+    # This function concatenates an arbitrary number of strings with another
+    # string in between.
+    # 
+    # Parameters
+    # ----------
+    # fill : str
+    #     String used to fill in between strings
+    # *strings : list of str
+    #     Arbitrary number of strings
+    # 
+    # Returns
+    # -------
+    # str
+    #     The concatenated strings
+    # 
     
     output = ''
     for s in strings:
@@ -87,25 +86,25 @@ def _char_concatenate(fill, *strings):
     return output[:len(fill)] #no extra char at the end
     
 def _next_path(path_pattern):
-    """
-    Return the next free path in a sequentially named list of files.
     
-    This implementation was provided by
-    https://stackoverflow.com/questions/17984809/how-do-i-create-an-incrementing-filename-in-python
-    With a path pattern like 'file-%s.txt' this returns the next free path in 
-    the sequence file-1.txt, file-2.txt, file-3.txt, ...  
-    It runs in log(n) time where n is the number of existing files in sequence.
-
-    Parameters:
-    -----------
-    path_pattern : str
-        The string with the pattern for the paths, e.g. 'file-%s.txt'
-    
-    Returns
-    -------
-    Path
-        The Path that was found
-    """
+    # Return the next free path in a sequentially named list of files.
+    # 
+    # This implementation was provided by
+    # https://stackoverflow.com/questions/17984809/how-do-i-create-an-incrementing-filename-in-python
+    # With a path pattern like 'file-%s.txt' this returns the next free path in 
+    # the sequence file-1.txt, file-2.txt, file-3.txt, ...  
+    # It runs in log(n) time where n is the number of existing files in sequence.
+    # 
+    # Parameters:
+    # -----------
+    # path_pattern : str
+    #     The string with the pattern for the paths, e.g. 'file-%s.txt'
+    # 
+    # Returns
+    # -------
+    # Path
+    #     The Path that was found
+     
     i = 1
 
     # First do an exponential search
@@ -122,24 +121,24 @@ def _next_path(path_pattern):
     return Path(path_pattern % b)
 
 def _create_file_race_condition_free(path_pattern):
-    """
-    Create the next free file in a sequentially named list without race conditions.
     
-    This function creates the next free file in a sequentially named list of 
-    file names as provided by a path name. When multiple threads try to do this
-    in parallel it could happen that another thread already created the next
-    file in the list.
+    # Create the next free file in a sequentially named list without race conditions.
+    # 
+    # This function creates the next free file in a sequentially named list of 
+    # file names as provided by a path name. When multiple threads try to do this
+    # in parallel it could happen that another thread already created the next
+    # file in the list.
+    # 
+    # Parameters
+    # ----------
+    # path_pattern : str
+    #     The string with the pattern for the paths, e.g. 'file-%s.txt'
+    # 
+    # Returns
+    # -------
+    # Path
+    #     The Path to the file that was created
     
-    Parameters
-    ----------
-    path_pattern : str
-        The string with the pattern for the paths, e.g. 'file-%s.txt'
-    
-    Returns
-    -------
-    Path
-        The Path to the file that was created
-    """
     
     created = False
     while not created:
