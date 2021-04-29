@@ -216,12 +216,12 @@ class KassConfig:
         else:
             raise ValueError('Only "Phase2" or "Phase3" are supported')
         
-    def _clean_initial_config(self):
-        # remove 'self' and 'file_name' from the dictionary
-        # not used any more
-        self._config_dict.pop('self', None)
-        self._config_dict.pop('file_name', None)
-        self._config_dict.pop('phase', None)
+    # def _clean_initial_config(self):
+    #     # remove 'self' and 'file_name' from the dictionary
+    #     # not used any more
+    #     self._config_dict.pop('self', None)
+    #     self._config_dict.pop('file_name', None)
+    #     self._config_dict.pop('phase', None)
         
     def _handle_seed(self):
         # Function to add a seed to the configuration if it was not set manually
@@ -694,8 +694,10 @@ class LocustConfig:
                                             
                         _noise_temperature_key: ['noise_temperature',
                                             'float -- Temperature for generation of thermal noise. When this keyword is used Locust will add noise to the simulation. Overrides noise_floor_psd if both keywords are used.'],
+
                         _center_to_short_key: ['center_to_short',
                                             'float -- Distance of waveguide center to waveguide short in m. Phase 2 specific'],
+
                         _center_to_antenna_key: ['center_to_antenna',
                                             'float -- Distance of waveguide center to antenna in m. Phase 2 specific ']}
     
@@ -738,7 +740,7 @@ class LocustConfig:
     # -------- private part --------
     
     def _handle_phase(self, phase, file_name):
-        # Read the phase parameter and take appropriate actions according input
+        # Read the phase parameter and take appropriate actions according to input
         # 
         # Sets the path to the hexbug dir and the template configuration file
         # according to the chosen phase and adjusts keys that are used for the
@@ -834,7 +836,7 @@ class LocustConfig:
         
         if self._noise_key in self._config_dict:
 
-            if (self._noise_floor_psd_key or self.__sNoiseTemp) in self._config_dict[self._noise_key]:
+            if (self._noise_floor_psd_key or self._noise_temperature_key) in self._config_dict[self._noise_key]:
                 self._config_dict[self._generators_key].insert(-1, self._noise_key)
 
             if (self._noise_floor_psd_key and self._noise_temperature_key) in self._config_dict[self._noise_key]:
