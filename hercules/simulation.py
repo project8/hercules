@@ -81,9 +81,9 @@ def _char_concatenate(fill, *strings):
     
     output = ''
     for s in strings:
-        output += s + char
+        output += s + fill
         
-    return output[:len(fill)] #no extra char at the end
+    return output[:-len(fill)] #no extra char at the end
     
 def _next_path(path_pattern):
     
@@ -230,14 +230,14 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
                             
         AbstractKassLocustP3.__init__(self, working_dir, direct)
     
-    def __call__(self, config_list):
+    def __call__(self, sim_config_list):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
         
         Runs a list of simulation jobs in parallel.
         
         Parameters
         ----------
-        config_list : list
+        sim_config_list : list
             A list of SimConfig objects
         """
         
