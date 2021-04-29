@@ -59,9 +59,7 @@ class EggReaderTest(unittest.TestCase):
 
         # Check if the test dir exists and names are correct
         self.test_data_dir = test_data_dir = FILE_DIR / "test_dir"
-        if not self.test_data_dir.is_dir():
-            print("Test directory not found. Creating one...")
-            os.mkdir(test_data_dir)
+        test_data_dir.mkdir(exist_ok=True)
         sub_dir_list = [d.parts[-1] for d in test_data_dir.iterdir() if d.is_dir()]
         missing_dir_list = list(
             set(self.test_data_dict.keys()) - set(sub_dir_list))
@@ -192,8 +190,8 @@ class EggReaderTest(unittest.TestCase):
             freq, data = file.quick_load_fft_stream(window_size, s)
 
             n_acq = file.get_stream_attrs(s)['n_acquisitions']
-            self.assertEqual(n_acq, data.shape[0])
-            self.assertEqual((n_ch, window_size), data.shape[2:])
+            self.assertEqual((n_acq, n_ch), data.shape[:2])
+            self.assertEqual(window_size, data.shape[-1])
 
             fig, ax = plt.subplots()
             title = "FFT Quick DAQ Stream {} of {}".format(s, name)
@@ -201,7 +199,7 @@ class EggReaderTest(unittest.TestCase):
 
             for i in range(n_ch):
                 # Acq 0
-                data_ch = data[0, :, i]
+                data_ch = data[0, i, :]
                 ax.plot(
                     freq,
                     np.abs(np.mean(data_ch, axis=0)),

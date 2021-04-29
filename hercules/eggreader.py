@@ -95,28 +95,6 @@ class LocustP3File:
             bit_depth] * voltage_range + voltage_offset
         return result
 
-    def load_ts_stream(self, stream: int = 0):
-        """
-        Load the time series in a stream by stream basis. Only a single stream is allowed.
-        The dataset is structured as (dict of arrays):
-        {Channel #: [Acquisition0: [Record0, Record1, ...], Acquisition1: [...], ...], Channel #: [...], ...}
-        """
-        try:
-            s = self._input_file['streams']["stream{}".format(stream)]
-            attr = self.get_stream_attrs(stream)
-        except KeyError as kerr:
-            print(kerr)
-        except Exception as e:
-            print(e)
-            raise
-
-        channels, data = self._read_ts(s, attr)
-        result = {}
-        for ch in channels:
-            result[ch] = self._convert_to_voltage(data[:, :, ch, :], ch)
-
-        return result
-
     def _read_ts(self, s, attr):
         """
         Helper method that returns a channel list and raw time series in np.array of shape:
@@ -146,6 +124,29 @@ class LocustP3File:
             data.append(temp)
         data = np.asarray_chkfinite(data)
         return channels, data
+
+    def load_ts_stream(self, stream: int = 0):
+        """
+        Load the time series in a stream by stream basis. Only a single stream is allowed.
+        The dataset is structured as (dict of arrays):
+        {Channel #: [Acquisition0: [Record0, Record1, ...], Acquisition1: [...], ...], Channel #: [...], ...}
+        """
+        try:
+            s = self._input_file['streams']["stream{}".format(stream)]
+            attr = self.get_stream_attrs(stream)
+        except KeyError as kerr:
+            print(kerr)
+        except Exception as e:
+            print(e)
+            raise
+
+        channels, data = self._read_ts(s, attr)
+        result = {}
+        for ch in channels:
+            data_ts = self._convert_to_voltage(data[:, :, ch, :], ch)
+            result[ch] = np.ascontiguousarray(data_ts)
+
+        return result
 
     def quick_load_ts_stream(self, stream: int = 0):
         """
@@ -192,17 +193,16 @@ class LocustP3File:
             # Apply DFT to sliced ts and return DFT in the original shape
             # freq is a single array since acq_rate is the same for all data in the stream
             data_freq = _apply_DFT(ts_sliced, dft_window)
-            result[ch] = data_freq
-
-            # Explicit copy to rearrange order in memory <- Not sure if necessary
-            # ts_final = ts_sliced.transpose(1, 0, 2).copy()
+            result[ch] = np.ascontiguousarray(data_freq)
 
         frequency = fftshift(fftfreq(dft_window, d=1 / acq_rate))
         return frequency, result
 
     def quick_load_fft_stream(self, dft_window: int = 4096, stream: int = 0):
         """
-        Load FFT in default format (same as quick load time series)
+        Load FFT in default format:
+        Note n_slices = int(n_records * record_size / dft_window)
+        (n_acquisitions, n_channels, n_slices, FFT for each slice)
         """
         ts = self.quick_load_ts_stream(stream)
         attr = self.get_stream_attrs(stream)
@@ -213,8 +213,6 @@ class LocustP3File:
         ts_sliced = ts[:, :, :n_slices * dft_window].reshape(
             (ts.shape[0], ts.shape[1], n_slices, -1))
         data_freq = _apply_DFT(ts_sliced, dft_window)
-        
-        data_freq = data_freq.transpose(0, 2, 1, 3)
         data_freq = np.ascontiguousarray(data_freq)
 
         frequency = fftshift(fftfreq(dft_window, d=1 / acq_rate))

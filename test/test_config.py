@@ -5,7 +5,6 @@ Date: Apr. 12, 2021
 
 """
 
-import os
 from pathlib import Path
 FILE_DIR = Path(__file__).parent.absolute()
 
@@ -65,12 +64,14 @@ class ConfigTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         # Clean up
-        files = os.listdir(FILE_DIR)
-        filtered_files = [f for f in files if f.endswith(".json") or f.endswith(".xml")]
+        files_json = FILE_DIR.glob('*.json')
+        files_xml = FILE_DIR.glob('*.xml')
+        filtered_files = sorted(files_json) + sorted(files_xml)
 
         for f in filtered_files:
-            path_to_file = os.path.join(FILE_DIR, f)
-            os.remove(path_to_file)
+            # Note f is a Path object
+            # Deletes the file
+            f.unlink()
 
 
 if __name__ == '__main__':
