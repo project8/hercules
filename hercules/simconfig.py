@@ -115,16 +115,24 @@ class KassConfig:
     _expression_dict_constants = { 'output_path': _output_path_expression,
                                    'config_path': _config_path_expression}
     
-    # these dictionaries define the accepted parameters
-    _expression_dict_simple = {'seed_kass': _seed_expression,
-                               't_max': _t_max_expression,
-                               'geometry': _geometry_expression,
-                               'energy': _energy_expression }
+    # these dictionaries define the accepted parameters and should also contain some documentation
+    _expression_dict_simple = {'seed_kass': [_seed_expression,
+                                            'int -- The seed used for Kassiopeia generators'],
+                               't_max': [_t_max_expression,
+                                            'float -- The maximum time length of the electron trjactory'],
+                               'geometry': [_geometry_expression,
+                                            'str -- The file name for the trap geometry. The file has to be placed in hercules/hexbug/PHASE/Trap'],
+                               'energy': [_energy_expression,
+                                            'float -- Initial electron kinetic energy']}
                        
-    _expression_dict_complex = {'x_min': _x_val_expression,
-                               'y_min': _y_val_expression,
-                               'z_min': _z_val_expression,
-                               'theta_min': _theta_val_expression }
+    _expression_dict_complex = {'x_min': [_x_val_expression,
+                                            'float -- Paired with x_max. Bounds for uniform generator of initial electron x position. For full control use one value for both'],
+                               'y_min': [_y_val_expression,
+                                            'float -- Paired with y_max. Bounds for uniform generator of initial electron y position. For full control use one value for both'],
+                               'z_min': [_z_val_expression,
+                                            'float -- Paired with z_max. Bounds for uniform generator of initial electron z position. For full control use one value for both'],
+                               'theta_min': [_theta_val_expression,
+                                            'float -- Paired with y_max. Bounds for uniform generator of initial electron y position. For full control use one value for both'] }
     
     def __init__(self,
                 phase = 'Phase3',
@@ -295,7 +303,7 @@ class KassConfig:
             #if self._config_dict[key] is None:
             if key not in self._config_dict:
                 self._config_dict[key] =(
-                    self._get_val(self._expression_dict_simple[key], self._xml) )
+                    self._get_val(self._expression_dict_simple[key][0], self._xml) )
                 
     def _add_complex_defaults(self):
         # Add default values to the internal config dict
@@ -307,7 +315,7 @@ class KassConfig:
             #if self._config_dict[key] is None:
             if key not in self._config_dict:
                 minVal, maxVal =( 
-                    self._get_min_max_val(self._expression_dict_complex[key], self._xml))
+                    self._get_min_max_val(self._expression_dict_complex[key][0], self._xml))
                 self._config_dict[key] = minVal
                 self._config_dict[key[:-3]+'max'] = maxVal
      
@@ -391,7 +399,7 @@ class KassConfig:
         # str
         #       the string with the replaced value
     
-        expression = self._expression_dict_simple[key]
+        expression = self._expression_dict_simple[key][0]
         val = self._config_dict[key]
         
         return self._replace_simple_val(expression, val, string)
@@ -416,7 +424,7 @@ class KassConfig:
         # str
         #       the string with the replaced value
         
-        expression = self._expression_dict_complex[key]
+        expression = self._expression_dict_complex[key][0]
         val_min = self._config_dict[key]
         val_max = self._config_dict[key[:-3]+'max']
         
@@ -484,6 +492,19 @@ class KassConfig:
             
         return keys
     
+    @classmethod
+    def print_keyword_documentation(cls):
+        """Print the documentation of accepted keywords as provided by the expression dicts."""
+        
+        for key in cls._expression_dict_simple:
+            entry = cls._expression_dict_simple[key]
+            print(key.ljust(25) + entry[1])
+            
+        for key in cls._expression_dict_complex:
+            entry = cls._expression_dict_complex[key]
+            print(key.ljust(25) + entry[1])
+            print((key[:-3]+'max').ljust(25) + 'See above')
+    
     def make_config_file(self, output_path):
         """Create a final Kassiopeia config file from the internal config.
         
@@ -527,9 +548,10 @@ def _set_dict_2d(key_dict, key_to_var_dict, arg_dict):
         output[key] = {}
         for sub_key in key_dict[key]:
             var = key_to_var_dict.get(sub_key)
-            val = arg_dict.get(var)
-            if val:
-                output[key][sub_key] = val
+            if var:
+                val = arg_dict.get(var[0])
+                if val:
+                    output[key][sub_key] = val
                 
     return output
 
@@ -624,25 +646,58 @@ class LocustConfig:
                                             _pitchangle_filename_key]
                                             }
     
-    #this defines the accepted parameters
-    _key_to_var_dict = {_n_channels_key : 'n_channels',
-                        _egg_filename_key: 'egg_filename',
-                        _record_size_key: 'record_size',
-                        _n_records_key: 'n_records',
-                        _v_range_key: 'v_range',
-                        _lo_frequency_key: 'lo_frequency',
-                        _nelements_per_strip_key: 'n_elements_per_strip',
-                        _n_subarrays_key: 'n_subarrays',
-                        _zshift_array_key: 'zshift_array',
-                        _array_radius_key: 'array_radius',
-                        _element_spacing_key: 'element_spacing',
-                        _tf_receiver_bin_width_key: 'tf_receiver_bin_width',
-                        _tf_receiver_filename_key: 'tf_receiver_filename',
-                        _random_seed_key: 'seed_locust',
-                        _noise_floor_psd_key: 'noise_floor_psd',
-                        _noise_temperature_key: 'noise_temperature',
-                        _center_to_short_key: 'center_to_short',
-                        _center_to_antenna_key: 'center_to_antenna'}
+    #this defines the accepted parameters and should also include a short documentation for each
+    _key_to_var_dict = {_n_channels_key : ['n_channels',
+                                            'int -- The number of simulated channels'],
+                                            
+                        _egg_filename_key: ['egg_filename',
+                                            'str -- Name of the output egg file'],
+                                            
+                        _record_size_key: ['record_size',
+                                            'int -- Number of simulated samples in a record'],
+                                            
+                        _n_records_key: ['n_records',
+                                            'int -- Number of simulated records'],
+                                            
+                        _v_range_key: ['v_range',
+                                            'float -- Voltage range of the digitizer in V'],
+                                            
+                        _lo_frequency_key: ['lo_frequency',
+                                            'float -- Frequency of the local oscillator in Hz'],
+                                            
+                        _nelements_per_strip_key: ['n_elements_per_strip',
+                                            'int -- Number of waveguide slots'],
+                                            
+                        _n_subarrays_key: ['n_subarrays',
+                                            'int -- Number of simulated antenna rings'],
+                                            
+                        _zshift_array_key: ['zshift_array',
+                                            'float -- z position of the antenna array in m'],
+                                            
+                        _array_radius_key: ['array_radius',
+                                            'float -- Radius of the antenna array in m'],
+                                            
+                        _element_spacing_key: ['element_spacing',
+                                            'float -- Spacing of the waveguide slots'],
+                                            
+                        _tf_receiver_bin_width_key: ['tf_receiver_bin_width',
+                                            'float -- I really do not know what this is'],
+                                            
+                        _tf_receiver_filename_key: ['tf_receiver_filename',
+                                            'str -- File name for the transfer function file. The file has to be placed in hercules/hexbug/Phase3/TransferFunctions'],
+                                            
+                        _random_seed_key: ['seed_locust',
+                                            'int -- Seed for generating noise in Locust'], 
+                                                   
+                        _noise_floor_psd_key: ['noise_floor_psd',
+                                            'float -- PSD value of the noise floor. When this keyword is used Locust will add noise to the simulation'],
+                                            
+                        _noise_temperature_key: ['noise_temperature',
+                                            'float -- Temperature for generation of thermal noise. When this keyword is used Locust will add noise to the simulation. Overrides noise_floor_psd if both keywords are used.'],
+                        _center_to_short_key: ['center_to_short',
+                                            'float -- Distance of waveguide center to waveguide short in m. Phase 2 specific'],
+                        _center_to_antenna_key: ['center_to_antenna',
+                                            'float -- Distance of waveguide center to antenna in m. Phase 2 specific ']}
     
     def __init__(self,                
                 phase = 'Phase3',
@@ -829,8 +884,8 @@ class LocustConfig:
         list
             list of the accepted keys
         """
-            
-        return list(cls._key_to_var_dict.values())
+        vals = cls._key_to_var_dict.values()
+        return [val[0] for val in vals]
                     
     def make_config_file(self, output_path):
         """Create a final Locust config file from the internal config.
@@ -843,7 +898,14 @@ class LocustConfig:
         
         with open(output_path, 'w') as outFile:
             json.dump(self._config_dict, outFile, indent=2)
-
+    
+    @classmethod
+    def print_keyword_documentation(cls):
+        """Print the documentation of accepted keywords as provided by key_to_var_dict."""
+        
+        for k in cls._key_to_var_dict:
+            entry = cls._key_to_var_dict[k]
+            print(entry[0].ljust(25) + entry[1])
     
 def _get_unknown_parameters(kwargs):
     # Return a set with unknown parameters
@@ -985,6 +1047,24 @@ class SimConfig:
             instance._kass_config._config_dict = config['kass-config']
             
         return instance
+    
+    @classmethod
+    def help(cls):
+        """Print documentation about the SimConfig.
+        
+        Prints the docstrings of the class and the __init__ method as well as
+        additional information about the accepted parameters in the keyword
+        arguments. The latter is provided via the two wrapped configurations.
+        
+        """
+        print(cls.__doc__)
+        print(cls.__init__.__doc__)
+        print()
+        print('List of accepted keyword arguments:')
+        KassConfig.print_keyword_documentation()
+        LocustConfig.print_keyword_documentation()
+        print()
+        print('Note that all keyword arguments are optional and take default values from the config files!')
         
     def make_config_file(self, filename_locust, filename_kass):
         """Create the final Kassiopeia and Locust config files.
