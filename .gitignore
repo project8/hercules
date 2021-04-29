@@ -27,6 +27,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 test/workingDir
+test/out*
 *.json
 *.xml
 
