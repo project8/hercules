@@ -20,6 +20,19 @@ from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         CONFIG)
 
 def _gen_shared_dir_string(dir_outside, dir_container):
+    # Return string for the docker argument for sharing a directory.
+    # 
+    # Parameters
+    # ----------
+    # dir_outside : Path 
+    #     The path of the host directory that should be shared
+    # dir_container : Path
+    #     The path of the container directory
+    # 
+    # Returns
+    # -------
+    # str
+    #     The string for the docker argument
     
     return ('-v '
                + str(dir_outside)
@@ -27,34 +40,71 @@ def _gen_shared_dir_string(dir_outside, dir_container):
                + str(dir_container))
                
 def _gen_shared_dir_string_singularity(dir_outside, dir_container):
+    # Return string for the singularity argument for sharing a directory.
+    # 
+    # Parameters
+    # ----------
+    # dir_outside : Path
+    #     The path of the host directory that should be shared
+    # dir_container : Path
+    #     The path of the container directory
+    # 
+    # Returns
+    # -------
+    # str
+    #     The string for the singularity argument
+    # 
     
     return ('--bind '
                + str(dir_outside)
                + ':'
                + str(dir_container))
                
-def _char_concatenate(char, *strings):
+def _char_concatenate(fill, *strings):
+    # Return a string concatenation of the inputs.
+    # 
+    # This function concatenates an arbitrary number of strings with another
+    # string in between.
+    # 
+    # Parameters
+    # ----------
+    # fill : str
+    #     String used to fill in between strings
+    # *strings : list of str
+    #     Arbitrary number of strings
+    # 
+    # Returns
+    # -------
+    # str
+    #     The concatenated strings
+    # 
     
     output = ''
     for s in strings:
-        output += s + char
+        output += s + fill
         
-    return output[:-1] #no extra char at the end
+    return output[:-len(fill)] #no extra char at the end
     
 def _next_path(path_pattern):
-    """
-
-    https://stackoverflow.com/questions/17984809/how-do-i-create-an-incrementing-filename-in-python
-    Finds the next free path in an sequentially named list of files
-
-    e.g. path_pattern = 'file-%s.txt':
-
-    file-1.txt
-    file-2.txt
-    file-3.txt
-
-    Runs in log(n) time where n is the number of existing files in sequence
-    """
+    
+    # Return the next free path in a sequentially named list of files.
+    # 
+    # This implementation was provided by
+    # https://stackoverflow.com/questions/17984809/how-do-i-create-an-incrementing-filename-in-python
+    # With a path pattern like 'file-%s.txt' this returns the next free path in 
+    # the sequence file-1.txt, file-2.txt, file-3.txt, ...  
+    # It runs in log(n) time where n is the number of existing files in sequence.
+    # 
+    # Parameters:
+    # -----------
+    # path_pattern : str
+    #     The string with the pattern for the paths, e.g. 'file-%s.txt'
+    # 
+    # Returns
+    # -------
+    # Path
+    #     The Path that was found
+     
     i = 1
 
     # First do an exponential search
@@ -71,6 +121,25 @@ def _next_path(path_pattern):
     return Path(path_pattern % b)
 
 def _create_file_race_condition_free(path_pattern):
+    
+    # Create the next free file in a sequentially named list without race conditions.
+    # 
+    # This function creates the next free file in a sequentially named list of 
+    # file names as provided by a path name. When multiple threads try to do this
+    # in parallel it could happen that another thread already created the next
+    # file in the list.
+    # 
+    # Parameters
+    # ----------
+    # path_pattern : str
+    #     The string with the pattern for the paths, e.g. 'file-%s.txt'
+    # 
+    # Returns
+    # -------
+    # Path
+    #     The Path to the file that was created
+    
+    
     created = False
     while not created:
         try:
@@ -84,12 +153,15 @@ def _create_file_race_condition_free(path_pattern):
 
     
 class AbstractKassLocustP3(ABC):
+    """An abstract base class for all KassLocust simulations."""
         
     #configuration parameters
     _p8_locust_dir = PosixPath(CONFIG.locust_path) / CONFIG.locust_version
     _p8_compute_dir = PosixPath(CONFIG.p8compute_path) / CONFIG.p8compute_version
         
     def __init__(self, working_dir, direct=True):
+        
+        #no docstring since no user should directly instantiate this class
             
         #prevents direct instantiation without using the factory
         if direct:
@@ -100,10 +172,38 @@ class AbstractKassLocustP3(ABC):
         
     @abstractmethod
     def __call__(self, config_list):
+        """Run a list of simulation jobs in parallel.
+        
+        Parameters
+        ----------
+        config_list : list
+            A list of SimConfig objects
+        """
+        
         pass
         
     @staticmethod
     def factory(name, working_dir):
+        """Return an instance of one of the derived classes.
+        
+        Parameters
+        ----------
+        name : str
+            The string used to identify the subclass, possible values are
+            'grace' and 'desktop'
+        working_dir: str
+            The string for the path to the working directory
+        
+        Raises
+        ------
+        ValueError
+            If the name is neither 'grace' nor 'desktop'
+            
+        Returns
+        -------
+        KassLocustP3Cluster or KassLocustP3Desktop
+            An instance of one of the two subclasses
+        """
             
         if name == 'grace':
             return KassLocustP3Cluster(working_dir, direct=False)
@@ -113,6 +213,7 @@ class AbstractKassLocustP3(ABC):
             raise ValueError('Bad KassLocustP3 creation : ' + name)
 
 class KassLocustP3Desktop(AbstractKassLocustP3):
+    """A class for running KassLocust on a desktop."""
     
     _working_dir_container = PosixPath('/') / 'workingdir'
     _command_script_name = 'locustcommands.sh'
@@ -120,11 +221,26 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
     _max_workers = int(CONFIG.desktop_parallel_jobs)
 
     def __init__(self, working_dir, direct=True):
-
+        """
+        Parameters
+        ----------
+        working_dir : str
+            The string for the path of the working directory
+        """
+                            
         AbstractKassLocustP3.__init__(self, working_dir, direct)
-
+    
     def __call__(self, sim_config_list):
-
+        """This method overrides :meth:`AbstractKassLocustP3.__call__`.
+        
+        Runs a list of simulation jobs in parallel.
+        
+        Parameters
+        ----------
+        sim_config_list : list
+            A list of SimConfig objects
+        """
+        
         print('Running jobs in Locust')
         with cf.ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             
@@ -135,6 +251,9 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
                 future.result()
     
     def _submit(self, sim_config: SimConfig):
+        #Submit the job with the given SimConfig
+        #Creates all the necessary configuration files, directories and the
+        #json output
         
         output_dir = self._working_dir / sim_config.sim_name
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -157,6 +276,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         subprocess.Popen('stty sane', shell=True).wait()
         
     def _assemble_command(self, output_dir):
+        #Assemble the docker command that runs the KassLocust simulation in the
+        #p8compute container
         
         docker_run = 'docker run -it --rm'
         
@@ -185,9 +306,11 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
                             self._container, docker_command)
 
         return cmd
-
+        
     def _gen_command_script(self, output_dir):
-
+        #Generate the bash script with the commands for running locust
+        #This script will be called from inside the container
+        
         shebang = '#!/bin/bash'
         p8_env = _char_concatenate(' ', 'source', 
                                  str(self._p8_compute_dir/'setup.sh'))
@@ -204,16 +327,32 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         subprocess.Popen('chmod +x ' + str(script), shell=True).wait()
         
 class KassLocustP3Cluster(AbstractKassLocustP3):
+    """A class for running KassLocust on the grace cluster."""
     
     _singularity = Path(CONFIG.container)
     _command_script_name = 'locustcommands.sh'
     _job_script_name = 'joblist%s.txt'
 
     def __init__(self, working_dir, direct=True):
-            
+        """
+        Parameters
+        ----------
+        working_dir : str
+            The string for the path of the working directory
+        """
+        
         AbstractKassLocustP3.__init__(self, working_dir, direct)
         
     def __call__(self, config_list):
+        """This method overrides :meth:`AbstractKassLocustP3.__call__`.
+        
+        Runs a list of simulation jobs in parallel.
+        
+        Parameters
+        ----------
+        config_list : list
+            A list of SimConfig objects
+        """
         
         self._joblist = _create_file_race_condition_free(str(self._working_dir/self._job_script_name))
         
@@ -223,11 +362,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         self._submit_job()
     
     def _submit_job(self):
-        
-        """
-        Based on https://github.com/project8/scripts/blob/master/YaleP8ComputeScripts/GeneratePhase3Sims.py
-        
-        """
+        #submits the whole list of jobs via dSQ
+        #Based on https://github.com/project8/scripts/blob/master/YaleP8ComputeScripts/GeneratePhase3Sims.py
         
         module = 'module load dSQ;'
         
@@ -247,6 +383,9 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         subprocess.Popen(cmd, shell=True).wait()
         
     def _add_job(self, sim_config: SimConfig):
+        #adds a job to the list of jobs
+        #Creates all the necessary configuration files, directories and the
+        #json output
         
         output_dir = self._working_dir / sim_config.sim_name
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -265,6 +404,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
             out_file.write(cmd)
         
     def _assemble_command(self, output_dir):
+        #Assemble the singularity command that runs the KassLocust simulation 
+        #in the p8compute singularity container
         
         singularity_exec = 'singularity exec --no-home'
         share_output_dir = _gen_shared_dir_string_singularity(output_dir,
@@ -288,6 +429,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         return final_command
     
     def _gen_locust_script(self, output_dir):   
+        #Generate the bash script with the commands for running locust
+        #This script will be called from inside the container
         
         shebang = '#!/bin/bash'
         p8_env = _char_concatenate(' ', 'source', 
@@ -306,12 +449,33 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         subprocess.Popen('chmod +x '+str(script), shell=True).wait()
 
 class KassLocustP3:
-
+    """Universal class for running KassLocustP3 simulations.
+    
+    The class serves as a wrapper for the other platform dependent subclasses
+    of AbstractKassLocustP3. Internally it wraps the subclass that is 
+    determined by the config.ini in hercules/settings. Users should only use
+    this class, since it makes user scripts agnostic to the computing platform.
+    """
+    
     def __init__(self, working_dir):
+        """
+        Parameters
+        ----------
+        working_dir : str
+            The string for the path to the working directory
+        """
+        
         self._kass_locust = AbstractKassLocustP3.factory(CONFIG.env, 
                                                           working_dir)
 
     def __call__(self, config_list):
+        """Run a list of simulation jobs in parallel.
+        
+        Parameters
+        ----------
+        config_list : list or SimConfig
+            Either a single SimConfig object or a list
+        """
         if type(config_list) is not list:
             config_list = [config_list]
         return self._kass_locust(config_list)

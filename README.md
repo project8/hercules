@@ -29,7 +29,9 @@ import hercules as he
 
 sim = he.KassLocustP3('/path/to/your/workingDir')
 #just an example
-config = SimConfig('yourSimulationName', nChannels=2, seedLocust=1, vRange=7.0,
+config = he.SimConfig('yourSimulationName', phase='Phase3', kass_file_name='someXMLFile.xml', 
+                    locust_file_name='someJSONFile.json', 
+                    nChannels=2, seedLocust=1, vRange=7.0,
                     eggFilename='someFileName.egg', seedKass =12534, xMin=-0.1e-5, 
                     xMax=0.1e-5, tMax=0.5e-6,
                     geometry='FreeSpaceGeometry_V00_00_10.xml')
@@ -38,7 +40,9 @@ config = SimConfig('yourSimulationName', nChannels=2, seedLocust=1, vRange=7.0,
 sim(config) #can also take a list of configs
 
 ```
-The example above runs a single Kassiopeia-Locust simulation with the given parameters. The full list of available parameters can be found at (documentation missing). If omitted, the seeds are generated based on the current time. Apart from the seeds, omitted parameters take on default values. The default configuration is determined by the files in the [hexbug](https://github.com/project8/hexbug/tree/459dffe30eea7d8bab9ddff78b63fda5198041ad) repo. Transfer functions and trap geometries from hexbug can be passed by their names only as demonstrated above. The script above is agnostic about the location of the hexbug repository, hercules will find it on its own. Once hercules is installed you can run the script from anywhere specifying any working directory that you want. Additionally, the same script works in a desktop environment as well as on the cluster without modification. 
+The example above runs a single phase 3 Kassiopeia-Locust simulation with the given parameters. All parameters except for the simulation name are optional. Omitted parameters in general take on default values with the exception being the seeds which are generated on the fly. The phase parameter can take the values 'Phase2' or 'Phase3' (default). Hercules generates the config files for Kassiopeia and Locust based on the inputs, the selected phase and the template config files which also provide the default values. All config files will be taken from the [hexbug](https://github.com/project8/hexbug/tree/459dffe30eea7d8bab9ddff78b63fda5198041ad) repository. Once hercules is installed you can run the script from anywhere specifying any working directory that you want and it will always be able to find the config files. Config files from hexbug (including Transfer functions and trap geometries) are passed by just their names as demonstrated above. Hercules will look for them in the appropriate directory of hexbug depending on the phase. In most cases you want to use the defaults for 'kass_file_name' and 'loucst_file_name'.  
+If you need the full list of simulation parameters you can ask hercules for a help message. `he.SimConfig.help()` will print a full list of all available keyword arguments with a short explanation for each one.  
+You can find example scripts in [examples](./examples). Hercules scripts work in a desktop environment as well as on the grace cluster without requiring any modifications. 
 
 ## Tests
 
