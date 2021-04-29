@@ -441,7 +441,7 @@ class SimConfig:
     @classmethod
     def from_json(cls, file_name):
         
-        instance = cls()
+        instance = cls("Default sim-name")
         
         with open(file_name, 'r') as infile:
             config = json.load(infile)
