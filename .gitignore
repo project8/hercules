@@ -135,5 +135,8 @@ dmypy.json
 # vscode
 .vscode/
 
+# Test folder
+test/test_dir/
+
 # config files
 config.ini
