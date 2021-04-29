@@ -8,12 +8,12 @@ Date: February 19, 2021
 
 __all__ = ['KassLocustP3']
 
+from hercules.simconfig import SimConfig
 from pathlib import Path, PosixPath
 import subprocess
 from abc import ABC, abstractmethod
 import concurrent.futures as cf
 from tqdm import tqdm
-import shutil
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME, KASS_CONFIG_NAME, SIM_CONFIG_NAME, 
@@ -218,7 +218,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
     _working_dir_container = PosixPath('/') / 'workingdir'
     _command_script_name = 'locustcommands.sh'
     _container = CONFIG.container
-    
+    _max_workers = int(CONFIG.desktop_parallel_jobs)
+
     def __init__(self, working_dir, direct=True):
         """
         Parameters
@@ -228,7 +229,6 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         """
                             
         AbstractKassLocustP3.__init__(self, working_dir, direct)
-        self._gen_command_script()
     
     def __call__(self, config_list):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
@@ -242,33 +242,31 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         """
         
         print('Running jobs in Locust')
-        max_workers = int(CONFIG.desktop_parallel_jobs)
-        with cf.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with cf.ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             
-            futures = [executor.submit(self._submit, config) 
-                       for config in config_list]
+            futures = [executor.submit(self._submit, sim_config) 
+                       for sim_config in sim_config_list]
                        
             for future in tqdm(cf.as_completed(futures), total=len(futures)):
                 future.result()
     
-    def _submit(self, config):
+    def _submit(self, sim_config: SimConfig):
         #Submit the job with the given SimConfig
         #Creates all the necessary configuration files, directories and the
         #json output
         
-        output_dir = self._working_dir / config.sim_name
+        output_dir = self._working_dir / sim_config.sim_name
         output_dir.mkdir(parents=True, exist_ok=True)
         
         locust_file = output_dir / LOCUST_CONFIG_NAME
         kass_file = output_dir / KASS_CONFIG_NAME
         config_dump = output_dir / SIM_CONFIG_NAME
 
-        config.make_config_file(locust_file, kass_file)
-        config.to_json(config_dump)
-        
+        sim_config.make_config_file(locust_file, kass_file)
+        sim_config.to_json(config_dump)
+        self._gen_command_script(output_dir)
+
         cmd = self._assemble_command(output_dir)
-        
-        log_dir_container = OUTPUT_DIR_CONTAINER / config.sim_name
         
         with open(output_dir/'log.out', 'w+') as log, open(output_dir/'log.err', 'w+') as err:
             p = subprocess.Popen(cmd, shell=True, stdout=log, stderr=err)
@@ -284,29 +282,32 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         docker_run = 'docker run -it --rm'
         
         bash_command = ('"'
-                       + str(self._working_dir_container/self._command_script_name)
+                       + str(OUTPUT_DIR_CONTAINER/self._command_script_name)
                        + ' '
                        + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME)
                        + '"')
                        
         docker_command = '/bin/bash -c ' + bash_command
-        
-        share_working_dir = _gen_shared_dir_string(self._working_dir, 
-                                            self._working_dir_container)
-                           
+
+        # share_working_dir = _gen_shared_dir_string(self._working_dir,
+        #                                     self._working_dir_container)
+
         share_output_dir = _gen_shared_dir_string(output_dir,
                                             OUTPUT_DIR_CONTAINER)
                                             
         share_hexbug_dir = _gen_shared_dir_string(HEXBUG_DIR, HEXBUG_DIR_CONTAINER)
-        
-        
-        cmd = _char_concatenate(' ', docker_run, share_working_dir, 
-                                    share_output_dir, share_hexbug_dir, 
-                                    self._container, docker_command)
-        
+
+
+        # cmd = _char_concatenate(' ', docker_run, share_working_dir,
+        #                             share_output_dir, share_hexbug_dir,
+        #                             self._container, docker_command)
+        cmd = _char_concatenate(' ', docker_run,
+                            share_output_dir, share_hexbug_dir,
+                            self._container, docker_command)
+
         return cmd
         
-    def _gen_command_script(self):
+    def _gen_command_script(self, output_dir):
         #Generate the bash script with the commands for running locust
         #This script will be called from inside the container
         
@@ -318,8 +319,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         locust = 'LocustSim config=$1'
         
         commands = _char_concatenate('\n', shebang, p8_env, kasper_env, locust)
-        
-        script = self._working_dir/self._command_script_name
+
+        script = output_dir/self._command_script_name
         with open(script, 'w') as out_file:
             out_file.write(commands)
             
@@ -381,20 +382,20 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         
         subprocess.Popen(cmd, shell=True).wait()
         
-    def _add_job(self, config):
+    def _add_job(self, sim_config: SimConfig):
         #adds a job to the list of jobs
         #Creates all the necessary configuration files, directories and the
         #json output
         
-        output_dir = self._working_dir / config.sim_name
+        output_dir = self._working_dir / sim_config.sim_name
         output_dir.mkdir(parents=True, exist_ok=True)
         
         locust_file = output_dir / LOCUST_CONFIG_NAME
         kass_file = output_dir / KASS_CONFIG_NAME
         config_dump = output_dir / SIM_CONFIG_NAME
 
-        config.make_config_file(locust_file, kass_file)
-        config.to_json(config_dump)
+        sim_config.make_config_file(locust_file, kass_file)
+        sim_config.to_json(config_dump)
         
         self._gen_locust_script(output_dir)
         cmd = self._assemble_command(output_dir)

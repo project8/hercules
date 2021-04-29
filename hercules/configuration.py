@@ -20,7 +20,15 @@ class Configuration:
     def __init__(self):
         
         config = configparser.ConfigParser()
-        config.read(_CONFIGDIR)
+        
+        try:
+            with open(_CONFIGDIR) as f:
+                config.read_file(f)
+        except IOError:
+            raise FileNotFoundError('config.ini not found!\n'
+                    + 'Copy hercules/settings/config.default.ini '
+                    + 'to hercules/settings/config.ini, adjust to your needs '
+                    + 'and run pip install again!')
         
         self._handle_env(config)
         
