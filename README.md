@@ -8,7 +8,7 @@ Running on a desktop requires [docker](https://www.docker.com/get-started). Furt
 
 ## Installation
 
-First, clone the repository to your prefered location. Then go into the repo and initialize the submodules `git submodule update --init`. Next, make a copy of the default [configuration](./hercules/settings/config.default.ini) into the same directory which you call `config.ini` and modify the new one to your needs. On the Yale cluster you enter 'grace', while on a desktop you enter 'desktop' (both without quotes) for the environment setting. For usage on a desktop you might also want to adjust the number of parallel jobs. In theory you can set it as high as the number of logical cores in your system. However, depending on your simulation settings Locust can consume a lot of RAM. Therefore, using as many cores as possible can potentially overload the RAM. In that case your system will become unusable. Do not touch the rest of the file.
+First, clone the repository to your prefered location. Then go into the repo and initialize the submodules `git submodule update --init`. Next, make a copy of the default [configuration](./hercules/settings/config.default.ini) to `./hercules/settings/config.ini` and modify the new one to your needs. On the Yale cluster you enter 'grace', while on a desktop you enter 'desktop' (both without quotes) for the environment setting. For usage on a desktop you might also want to adjust the number of parallel jobs. In theory you can set it as high as the number of logical cores in your system. However, depending on your simulation settings Locust can consume a lot of RAM. Therefore, using as many cores as possible can potentially overload the RAM. In that case your system will become unusable. Do not touch the rest of the file.
 ```
 [USER]
 #possible values are 'desktop', 'grace'
@@ -16,9 +16,9 @@ ENVIRONMENT = grace
 DESKTOP_PARALLEL_JOBS = 2
 ```
 
-As last step, run `pip install .` in the directory with setup.py. That's all.
+As last step, run `pip install .` in the directory with setup.py. 
 
-Note: run `pip install -e .` for an editable install (deprecated practice).
+Note: If you are using the system wide python environment instead of a virtual environment (e.g. with Anaconda) the package data will go to `/usr/local`, which causes access permission issues with Docker. As a workaround use `pip install -e .` which creates symlinks to the repo instead of copying files.
 
 ## Usage
 
