@@ -21,9 +21,9 @@ matplotlib.use("Agg")  # No GUI
 
 class EggReaderTest(unittest.TestCase):
     def setUp(self) -> None:
-        n_ch = 1
-        r_range = np.linspace(0.000, 0.010, 5)
-        theta_range = np.linspace(87.0, 90.0, 4)
+        n_ch = 3
+        r_range = np.linspace(0.000, 0.010, 1)
+        theta_range = np.linspace(85.0, 90.0, 1)
         r_phi_range = np.linspace(0, 2 * np.pi / n_ch, 1)
 
         test_data_dict = {}
@@ -49,8 +49,8 @@ class EggReaderTest(unittest.TestCase):
                         z_max=0,
                         theta_min=theta,
                         theta_max=theta,
-                        t_max=5e-6,
-                        record_size=30000,
+                        t_max=1e-6,
+                        record_size=10000,
                         v_range=1.5e-7,
                         lo_frequency=25.8881e9,
                         acq_rate=250.0,
@@ -70,10 +70,11 @@ class EggReaderTest(unittest.TestCase):
 
         # Create missing test data
         # Note: if data is missing, must run the tests in cmd line to create the data
-        for l in missing_dir_list:
-            print("Creating test data: {}".format(l))
+        if len(missing_dir_list) != 0:
+            print("Creating missing data...")
+            missing_data_config = [test_data_dict[l] for l in missing_dir_list]
             sim = he.KassLocustP3(str(test_data_dir))
-            sim(self.test_data_dict[l])
+            sim(missing_data_config)
 
     def test_locust(self) -> None:
         # Test sim generation (done in setUp), substitutes regular locust test

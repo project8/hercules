@@ -583,6 +583,7 @@ class LocustConfig:
     _record_size_key = 'record-size'
     _n_records_key = 'n-records'
     _acq_rate_key = 'acquisition-rate'
+    _n_channels_key = 'n-channels'
     
     # digitizer sub keys
     _v_range_key = 'v-range'
@@ -608,7 +609,6 @@ class LocustConfig:
     _element_spacing_key = 'element-spacing'
     _tf_receiver_bin_width_key = 'tf-receiver-bin-width'
     _tf_receiver_filename_key = 'tf-receiver-filename'
-    _n_channels_key = 'n-channels'
     
     #phase 2 specific
     _kass_signal_key = 'kass-signal' #first level key
@@ -623,7 +623,8 @@ class LocustConfig:
                     _sim_key: [ _egg_filename_key,
                                 _record_size_key,
                                 _n_records_key,
-                                _acq_rate_key],
+                                _acq_rate_key,
+                                _n_channels_key],
                     _digit_key: [_v_range_key, 
                                  _v_offset_key],
                     _noise_key: [_random_seed_key,
@@ -639,8 +640,7 @@ class LocustConfig:
                                         _array_radius_key,
                                         _element_spacing_key,
                                         _tf_receiver_bin_width_key,
-                                        _tf_receiver_filename_key,
-                                        _n_channels_key],
+                                        _tf_receiver_filename_key],
                     _kass_signal_key: [_xml_filename_key,
                                             _lo_frequency_key,
                                             _center_to_short_key,
