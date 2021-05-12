@@ -582,6 +582,7 @@ class LocustConfig:
     _egg_filename_key = 'egg-filename'
     _record_size_key = 'record-size'
     _n_records_key = 'n-records'
+    _acq_rate_key = 'acquisition-rate'
     
     # digitizer sub keys
     _v_range_key = 'v-range'
@@ -621,7 +622,8 @@ class LocustConfig:
     _key_dict = {   _generators_key: [],
                     _sim_key: [ _egg_filename_key,
                                 _record_size_key,
-                                _n_records_key ],
+                                _n_records_key,
+                                _acq_rate_key],
                     _digit_key: [_v_range_key, 
                                  _v_offset_key],
                     _noise_key: [_random_seed_key,
@@ -647,7 +649,7 @@ class LocustConfig:
                                             }
     
     #this defines the accepted parameters and should also include a short documentation for each
-    _key_to_var_dict = {_n_channels_key : ['n_channels',
+    _key_to_var_dict = {_n_channels_key: ['n_channels',
                                             'int -- The number of simulated channels'],
                                             
                         _egg_filename_key: ['egg_filename',
@@ -658,6 +660,9 @@ class LocustConfig:
                                             
                         _n_records_key: ['n_records',
                                             'int -- Number of simulated records'],
+
+                        _acq_rate_key: ['acq_rate',
+                                            'float -- Acquisition rate of the digitizer in MHz'],
                                             
                         _v_range_key: ['v_range',
                                             'float -- Voltage range of the digitizer in V'],

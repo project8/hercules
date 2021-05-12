@@ -21,9 +21,9 @@ matplotlib.use("Agg")  # No GUI
 
 class EggReaderTest(unittest.TestCase):
     def setUp(self) -> None:
-        n_ch = 3
-        r_range = np.linspace(0.002, 0.008, 2)
-        theta_range = np.linspace(89.7, 90.0, 2)
+        n_ch = 1
+        r_range = np.linspace(0.000, 0.010, 5)
+        theta_range = np.linspace(87.0, 90.0, 4)
         r_phi_range = np.linspace(0, 2 * np.pi / n_ch, 1)
 
         test_data_dict = {}
@@ -49,9 +49,11 @@ class EggReaderTest(unittest.TestCase):
                         z_max=0,
                         theta_min=theta,
                         theta_max=theta,
-                        t_max=5e-7,
-                        record_size=3000,
-                        v_range=3.0e-7,
+                        t_max=5e-6,
+                        record_size=30000,
+                        v_range=1.5e-7,
+                        lo_frequency=25.8881e9,
+                        acq_rate=250.0,
                         geometry='FreeSpaceGeometry_V00_00_10.xml')
                     test_data_dict[name] = config
 
@@ -157,7 +159,7 @@ class EggReaderTest(unittest.TestCase):
         n_streams = file.n_streams
 
         for s in range(n_streams):
-            freq, data = file.load_fft_stream(256, s)
+            freq, data = file.load_fft_stream(1024, s)
             channels = data.keys()
 
             fig, ax = plt.subplots()
@@ -185,7 +187,7 @@ class EggReaderTest(unittest.TestCase):
         n_streams = file.n_streams
         n_ch = file.n_channels
 
-        window_size = 256
+        window_size = 1024
         for s in range(n_streams):
             freq, data = file.quick_load_fft_stream(window_size, s)
 
