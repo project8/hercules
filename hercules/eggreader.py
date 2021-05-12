@@ -162,10 +162,12 @@ class LocustP3File:
             print(e)
             raise
 
-        _, data = self._read_ts(s, attr)
+        channels, data = self._read_ts(s, attr)
         # transpose axis 1 and 2 and concatenate all records
         data = np.swapaxes(data, 1, 2)
         data = np.reshape(data, data.shape[:2] + (-1,))
+        for ch in channels:
+            data[:, ch, :] = self._convert_to_voltage(data[:, ch, :], ch)
         data = np.ascontiguousarray(data)
 
         return data
