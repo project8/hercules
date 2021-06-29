@@ -666,6 +666,9 @@ class LocustConfig:
                                             
                         _v_range_key: ['v_range',
                                             'float -- Voltage range of the digitizer in V'],
+
+                        _v_offset_key: ['v_offset',
+                                            'float -- Voltage offset of the digitizer in V'],
                                             
                         _lo_frequency_key: ['lo_frequency',
                                             'float -- Frequency of the local oscillator in Hz'],
