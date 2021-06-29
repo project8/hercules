@@ -132,7 +132,7 @@ class KassConfig:
                                'z_min': [_z_val_expression,
                                             'float -- Paired with z_max. Bounds for uniform generator of initial electron z position. For full control use one value for both'],
                                'theta_min': [_theta_val_expression,
-                                            'float -- Paired with y_max. Bounds for uniform generator of initial electron y position. For full control use one value for both'] }
+                                            'float -- Paired with theta_max. Bounds for uniform generator of initial electron pitch angle. For full control use one value for both'] }
     
     def __init__(self,
                 phase = 'Phase3',
