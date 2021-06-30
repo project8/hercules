@@ -140,3 +140,6 @@ test/test_dir/
 
 # config files
 config.ini
+
+# Mac crap
+.DS_Store
