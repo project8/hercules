@@ -83,16 +83,18 @@ class LocustP3File:
             channels_attr[key] = att
         return channels_attr
 
-    def _convert_to_voltage(self, data, channel):
+    def _convert_to_voltage(self, data: np.ndarray, channel: int):
         """
-        Convert data from digitizer unit to volts, specific by channel
+        Convert complex data from digitizer unit to volts, specific by channel
         """
+        if not np.all(np.iscomplex(data)):
+            raise ValueError("Data is not complex.")
         attr = self.get_channel_attrs(channel)
         bit_depth = attr['bit_depth']
         voltage_range = attr['voltage_range']
         voltage_offset = attr['voltage_offset']
         result = data / self._int_max[
-            bit_depth] * voltage_range + voltage_offset
+            bit_depth] * voltage_range + voltage_offset + 1j * voltage_offset
         return result
 
     def _read_ts(self, s, attr):
