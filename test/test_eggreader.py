@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 
 from matplotlib.figure import Figure
+
 FILE_DIR = Path(__file__).parent.absolute()
 
 import matplotlib
@@ -16,6 +17,7 @@ import unittest
 import hercules as he
 import numpy as np
 import matplotlib.pyplot as plt
+
 matplotlib.use("Agg")  # No GUI
 
 
@@ -62,7 +64,9 @@ class EggReaderTest(unittest.TestCase):
         # Check if the test dir exists and names are correct
         self.test_data_dir = test_data_dir = FILE_DIR / "test_dir"
         test_data_dir.mkdir(exist_ok=True)
-        sub_dir_list = [d.parts[-1] for d in test_data_dir.iterdir() if d.is_dir()]
+        sub_dir_list = [
+            d.parts[-1] for d in test_data_dir.iterdir() if d.is_dir()
+        ]
         missing_dir_list = list(
             set(self.test_data_dict.keys()) - set(sub_dir_list))
         print(
@@ -102,14 +106,19 @@ class EggReaderTest(unittest.TestCase):
             title = "DAQ Stream {} of {}".format(s, name)
             ax.set_title(title)
 
-            for i in channels:
+            for i in range(min(5, len(channels))):
                 # Acq 0 and record 0
                 data_ch = data[i][0, 0, :]
-                ax.plot(
-                    np.arange(0, len(data_ch)) / acq_rate,
-                    np.abs(data_ch),
-                    label="Ch {}".format(i),
-                )
+                ax.plot(np.arange(0, len(data_ch)) / acq_rate,
+                        np.real(data_ch),
+                        label="Ch {} Re".format(i),
+                        ls="-",
+                        color="C{}".format(i))
+                ax.plot(np.arange(0, len(data_ch)) / acq_rate,
+                        np.imag(data_ch),
+                        label="Ch {} Im".format(i),
+                        ls="--",
+                        color="C{}".format(i))
             ax.set_xlabel(r"Time $[s]$")
             ax.set_ylabel(r"DAQ V $[V]$")
             ax.legend(loc="best")
@@ -134,14 +143,19 @@ class EggReaderTest(unittest.TestCase):
             title = "Quick DAQ Stream {} of {}".format(s, name)
             ax.set_title(title)
 
-            for i in range(n_ch):
-                # Acq 0
+            for i in range(min(5, n_ch)):
+                # Acq 0 and record 0
                 data_ch = data[0, i, :]
-                ax.plot(
-                    np.arange(0, len(data_ch)) / acq_rate,
-                    np.abs(data_ch),
-                    label="Ch {}".format(i),
-                )
+                ax.plot(np.arange(0, len(data_ch)) / acq_rate,
+                        np.real(data_ch),
+                        label="Ch {} Re".format(i),
+                        ls="-",
+                        color="C{}".format(i))
+                ax.plot(np.arange(0, len(data_ch)) / acq_rate,
+                        np.imag(data_ch),
+                        label="Ch {} Im".format(i),
+                        ls="--",
+                        color="C{}".format(i))
             ax.set_xlabel(r"Time $[s]$")
             ax.set_ylabel(r"DAQ V $[V]$")
             ax.legend(loc="best")
@@ -231,4 +245,3 @@ class EggReaderTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    
