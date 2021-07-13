@@ -834,12 +834,13 @@ class LocustConfig:
                 self._config_dict[key0][key1] = value + orig.split('/')[-1]
 
 
-    def _finalize(self):
+    def _finalize(self, template_config):
         # Finalize the configuration after everything else is done.
-        #
-        # Actually the most part is done here. It add the defaults from the
+        # 
+        # Actually the most part is done here. It add the defaults from the 
         # template file, it reacts to the inputs that are noise related etc...
-
+        
+        self._add_defaults(template_config)
         self._handle_noise()
         self._set(self._digit_key, self._v_offset_key,
                     -self._config_dict[self._digit_key][self._v_range_key]/2)
