@@ -51,9 +51,10 @@ class EggReaderTest(unittest.TestCase):
                         theta_max=theta,
                         t_max=1e-6,
                         record_size=10000,
-                        v_range=1.5e-7,
+                        v_range=5.0e-8,
+                        v_offset=1.0e-8,
                         lo_frequency=25.8881e9,
-                        acq_rate=250.0,
+                        acq_rate=205.0,
                         geometry='FreeSpaceGeometry_V00_00_10.xml')
                     test_data_dict[name] = config
 

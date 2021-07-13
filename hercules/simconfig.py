@@ -812,8 +812,8 @@ class LocustConfig:
         
         self._add_defaults(template_config)
         self._handle_noise()
-        self._set(self._digit_key, self._v_offset_key, 
-                    -self._config_dict[self._digit_key][self._v_range_key]/2)
+        # self._set(self._digit_key, self._v_offset_key, 
+        #             -self._config_dict[self._digit_key][self._v_range_key]/2)
         self._adjust_paths()
         
     def _add_defaults(self, template_config):

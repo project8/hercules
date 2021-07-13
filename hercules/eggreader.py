@@ -92,7 +92,7 @@ class LocustP3File:
         voltage_range = attr['voltage_range']
         voltage_offset = attr['voltage_offset']
         result = data / self._int_max[
-            bit_depth] * voltage_range + voltage_offset
+            bit_depth] * voltage_range
         return result
 
     def _read_ts(self, s, attr):
