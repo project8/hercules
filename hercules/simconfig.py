@@ -667,9 +667,6 @@ class LocustConfig:
                         _v_range_key: ['v_range',
                                             'float -- Voltage range of the digitizer in V'],
 
-                        _v_offset_key: ['v_offset',
-                                            'float -- Voltage offset of the digitizer in V'],
-                                            
                         _lo_frequency_key: ['lo_frequency',
                                             'float -- Frequency of the local oscillator in Hz'],
                                             
@@ -812,8 +809,12 @@ class LocustConfig:
         
         self._add_defaults(template_config)
         self._handle_noise()
-        # self._set(self._digit_key, self._v_offset_key, 
-        #             -self._config_dict[self._digit_key][self._v_range_key]/2)
+        # Adding analog signal offset before digitization in Locust:
+        # Note the offset is passed in as (volt - offset) with the minus sign
+        # Also need to ensure that the analog signal after the offset is all positive
+        # Thus usually this value is set to -(v_range / 2)
+        self._set(self._digit_key, self._v_offset_key, 
+                    -self._config_dict[self._digit_key][self._v_range_key]/2)
         self._adjust_paths()
         
     def _add_defaults(self, template_config):
