@@ -1,3 +1,3 @@
 [submodule "hercules/hexbug"]
 	path = hercules/hexbug
-	url = https://github.com/project8/hexbug
+	url = ../hexbug
