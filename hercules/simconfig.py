@@ -609,6 +609,7 @@ class LocustConfig:
     _element_spacing_key = 'element-spacing'
     _tf_receiver_bin_width_key = 'tf-receiver-bin-width'
     _tf_receiver_filename_key = 'tf-receiver-filename'
+    _event_spacing_samples_key = 'event-spacing-samples'
     
     #phase 2 specific
     _kass_signal_key = 'kass-signal' #first level key
@@ -640,7 +641,8 @@ class LocustConfig:
                                         _array_radius_key,
                                         _element_spacing_key,
                                         _tf_receiver_bin_width_key,
-                                        _tf_receiver_filename_key],
+                                        _tf_receiver_filename_key,
+                                        _event_spacing_samples_key],
                     _kass_signal_key: [_xml_filename_key,
                                             _lo_frequency_key,
                                             _center_to_short_key,
@@ -681,6 +683,9 @@ class LocustConfig:
                                             
                         _array_radius_key: ['array_radius',
                                             'float -- Radius of the antenna array in m'],
+                                            
+                        _event_spacing_samples_key: ['event_spacing_samples',
+                                            'int -- Number of samples before first event and between events'],
                                             
                         _element_spacing_key: ['element_spacing',
                                             'float -- Spacing of the waveguide slots'],
