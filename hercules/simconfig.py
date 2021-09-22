@@ -550,7 +550,7 @@ def _set_dict_2d(key_dict, key_to_var_dict, arg_dict):
             var = key_to_var_dict.get(sub_key)
             if var:
                 val = arg_dict.get(var[0])
-                if val:
+                if val is not None:
                     output[key][sub_key] = val
                 
     return output
@@ -736,7 +736,7 @@ class LocustConfig:
 
         self._config_dict = _set_dict_2d(self._key_dict, self._key_to_var_dict, 
                                             kwargs)
-                                            
+                     
         self._handle_phase(phase, locust_file_name)
         templateConfig = _get_json_from_file(self._file_name)
         
