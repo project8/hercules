@@ -424,7 +424,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         
         check_failure = "if [ $? -gt 1 ];then scontrol requeue $SLURM_JOB_ID;fi;"
                         
-        final_command = singularity_cmd + ';' + check_failure +'\n\n'
+        final_command = singularity_cmd + ';' + check_failure +'\n'
         
         return final_command
     
