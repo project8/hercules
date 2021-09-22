@@ -19,7 +19,7 @@ required = [
 
 setuptools.setup(
     name="hercules",
-    version="0.3.1",
+    version="0.3.2",
     author="Florian Thomas, Mingyu (Charles) Li",
     author_email="fthomas@uni-mainz.de, mingyuli@mit.edu",
     description="https://github.com/project8/hercules",
