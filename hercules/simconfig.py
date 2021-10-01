@@ -550,7 +550,7 @@ def _set_dict_2d(key_dict, key_to_var_dict, arg_dict):
             var = key_to_var_dict.get(sub_key)
             if var:
                 val = arg_dict.get(var[0])
-                if val:
+                if val is not None:
                     output[key][sub_key] = val
                 
     return output
@@ -609,6 +609,7 @@ class LocustConfig:
     _element_spacing_key = 'element-spacing'
     _tf_receiver_bin_width_key = 'tf-receiver-bin-width'
     _tf_receiver_filename_key = 'tf-receiver-filename'
+    _event_spacing_samples_key = 'event-spacing-samples'
     
     #phase 2 specific
     _kass_signal_key = 'kass-signal' #first level key
@@ -640,7 +641,8 @@ class LocustConfig:
                                         _array_radius_key,
                                         _element_spacing_key,
                                         _tf_receiver_bin_width_key,
-                                        _tf_receiver_filename_key],
+                                        _tf_receiver_filename_key,
+                                        _event_spacing_samples_key],
                     _kass_signal_key: [_xml_filename_key,
                                             _lo_frequency_key,
                                             _center_to_short_key,
@@ -681,6 +683,9 @@ class LocustConfig:
                                             
                         _array_radius_key: ['array_radius',
                                             'float -- Radius of the antenna array in m'],
+                                            
+                        _event_spacing_samples_key: ['event_spacing_samples',
+                                            'int -- Number of samples before first event and between events'],
                                             
                         _element_spacing_key: ['element_spacing',
                                             'float -- Spacing of the waveguide slots'],
@@ -731,7 +736,7 @@ class LocustConfig:
 
         self._config_dict = _set_dict_2d(self._key_dict, self._key_to_var_dict, 
                                             kwargs)
-                                            
+                     
         self._handle_phase(phase, locust_file_name)
         templateConfig = _get_json_from_file(self._file_name)
         
