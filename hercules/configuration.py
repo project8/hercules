@@ -48,8 +48,9 @@ class Configuration:
         self._env = config['USER']['ENVIRONMENT']
 
         if self._env == 'desktop':
-            self._container = (config['DESKTOP']['CONTAINER']
-                                + ':' + config['PACKAGE']['P8COMPUTEVERSION'])
+            self._container = config['DESKTOP']['CONTAINER']
+            #self._container = (config['DESKTOP']['CONTAINER']
+                                #+ ':' + config['PACKAGE']['P8COMPUTEVERSION'])
         elif self._env == 'grace':
             self._container = config['GRACE']['CONTAINER']
         else:
