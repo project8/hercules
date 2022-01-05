@@ -87,7 +87,7 @@ class LocustP3File:
         """
         Convert complex data from digitizer unit to volts, specific by channel
         """
-        if not np.all(np.iscomplex(data)):
+        if not np.issubdtype(data.dtype, np.complexfloating):
             raise ValueError("Data is not complex.")
         attr = self.get_channel_attrs(channel)
         bit_depth = attr['bit_depth']
