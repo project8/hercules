@@ -17,7 +17,7 @@ HEXBUG_DIR = MODULE_DIR / 'hexbug'
 #container is running linux
 #-> make sure it's PosixPath when run from windows
 HEXBUG_DIR_CONTAINER = PosixPath('/') / 'tmp'
-OUTPUT_DIR_CONTAINER = PosixPath('/') / 'home' 
+OUTPUT_DIR_CONTAINER = PosixPath('/') / 'home'
 LOCUST_CONFIG_NAME_P2 = 'LocustPhase2Template.json'
 KASS_CONFIG_NAME_P2 = 'Project8Phase2_electrons.xml'
 LOCUST_CONFIG_NAME_P3 = 'LocustPhase3Template.json'

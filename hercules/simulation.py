@@ -342,6 +342,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         """
         
         AbstractKassLocustP3.__init__(self, working_dir, direct)
+
+        self._tmp_dir = Path('/tmp', self._working_dir.parts[-1])
         
     def __call__(self, config_list):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
@@ -373,7 +375,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         job_limit = '--max-jobs ' + CONFIG.job_limit
         job_memory = '--mem-per-cpu ' + CONFIG.job_memory +'m'
         job_timelimit = '-t ' + CONFIG.job_timelimit
-        job_status = '--status-dir ' + str(self._working_dir)
+        #job_status = '--status-dir ' + str(self._working_dir)
+        job_status = '--suppress-stats-file'
         job_output = '--output /dev/null'
         
         cmd = _char_concatenate(' ', module, dsq, job_file, job_partition, 
@@ -389,6 +392,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         
         output_dir = self._working_dir / sim_config.sim_name
         output_dir.mkdir(parents=True, exist_ok=True)
+
+        tmp_output_dir = self._tmp_dir / sim_config.sim_name
         
         locust_file = output_dir / LOCUST_CONFIG_NAME
         kass_file = output_dir / KASS_CONFIG_NAME
@@ -398,33 +403,43 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         sim_config.to_json(config_dump)
         
         self._gen_locust_script(output_dir)
-        cmd = self._assemble_command(output_dir)
+        cmd = self._assemble_command(output_dir, tmp_output_dir)
         
         with open(self._joblist, 'a+') as out_file:
             out_file.write(cmd)
         
-    def _assemble_command(self, output_dir):
+    def _assemble_command(self, output_dir, tmp_output_dir):
         #Assemble the singularity command that runs the KassLocust simulation 
         #in the p8compute singularity container
+
+        create_log_dir = f'mkdir -p {str(tmp_output_dir)}'
         
         singularity_exec = 'singularity exec --no-home'
         share_output_dir = _gen_shared_dir_string_singularity(output_dir,
                                                         OUTPUT_DIR_CONTAINER)
         share_hexbug_dir = _gen_shared_dir_string_singularity(HEXBUG_DIR, 
                                                         HEXBUG_DIR_CONTAINER)
+
         container = str(self._singularity)
         run_script = str(OUTPUT_DIR_CONTAINER/self._command_script_name)
         
-        log = '>' + str(output_dir) + '/run_singularity.out'
-        err = '2>' + str(output_dir) + '/run_singularity.err'
+        #log = '>' + str(output_dir) + '/run_singularity.out'
+        #err = '2>' + str(output_dir) + '/run_singularity.err'
+        log = '>' + str(tmp_output_dir) + '/run_singularity.out'
+        err = '2>' + str(tmp_output_dir) + '/run_singularity.err'
         
         singularity_cmd = _char_concatenate(' ', singularity_exec, share_output_dir, 
                                             share_hexbug_dir, container, 
                                             run_script, log, err)
         
         check_failure = "if [ $? -gt 1 ];then scontrol requeue $SLURM_JOB_ID;fi;"
+
+        mv_log_file = f"mv {str(tmp_output_dir)}/run_singularity.out {str(output_dir)}"
+        mv_err_file = f"mv {str(tmp_output_dir)}/run_singularity.err {str(output_dir)}"
+        mv_files = mv_log_file + ';' + mv_err_file
                         
-        final_command = singularity_cmd + ';' + check_failure +'\n'
+        final_command = create_log_dir + ';' + singularity_cmd + ';' + mv_files + ';' + check_failure +'\n'
+        #final_command = create_log_dir + ';' + singularity_cmd + ';' + check_failure +'\n'
         
         return final_command
     
