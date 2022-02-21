@@ -13,6 +13,7 @@ import json
 import re
 from pathlib import Path, PosixPath
 from abc import ABC, abstractmethod
+from copy import deepcopy
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME_P2, KASS_CONFIG_NAME_P2,
@@ -186,7 +187,8 @@ class KassConfig:
     # -------- private part --------
     
     def _add_unknown_args_translation(self, unknown_args_translation):
-        # Add the translation of unknown arguments to _expression_dict_simple 
+        # Add the translation of unknown arguments to _expression_dict_simple
+        self._expression_dict_simple = self._expression_dict_simple.copy()#prevent overriding the class level dict
         for key in unknown_args_translation:
             self._expression_dict_simple[key] = [unknown_args_translation[key], '']
         
@@ -783,6 +785,8 @@ class LocustConfig:
     
     def _add_unknown_args_translation(self, unknown_args_translation):
         # Add the translation of unknown arguments to _expression_dict_simple 
+        self._key_to_var_dict = deepcopy(self._key_to_var_dict) #prevent overriding the class level dict
+        self._key_dict = deepcopy(self._key_dict)
         for key in unknown_args_translation:
             key_0 = unknown_args_translation[key][0]
             key_1 = unknown_args_translation[key][1]
