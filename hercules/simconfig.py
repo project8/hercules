@@ -493,8 +493,8 @@ class KassConfig:
     def config_dict(self):
         return self._config_dict 
         
-    @classmethod
-    def get_accepted_keys(cls):
+
+    def get_accepted_keys(self):
         """Return a list of keys that are accepted by the internal config dict.
         
         Returns
@@ -503,13 +503,14 @@ class KassConfig:
             list of the accepted keys
         """
         
-        keys = list(cls._expression_dict_simple.keys())
-        keys = keys + list(cls._expression_dict_complex.keys())
+        keys = list(self._expression_dict_simple.keys())
+        keys = keys + list(self._expression_dict_complex.keys())
         
-        for key in cls._expression_dict_complex:
+        for key in self._expression_dict_complex:
             keys.append(key[:-3]+'max')
             
         return keys
+        
     
     @classmethod
     def print_keyword_documentation(cls):
@@ -926,9 +927,9 @@ class LocustConfig:
         name = path.name
         self._set(self._signal_key, self._xml_filename_key, 
                     str(OUTPUT_DIR_CONTAINER / name))
-    
-    @classmethod
-    def get_accepted_keys(cls):
+                    
+                    
+    def get_accepted_keys(self):
         """Return a list of keys that are accepted for the internal config dict.
         
         Returns
@@ -936,8 +937,9 @@ class LocustConfig:
         list
             list of the accepted keys
         """
-        vals = cls._key_to_var_dict.values()
+        vals = self._key_to_var_dict.values()
         return [val[0] for val in vals]
+                    
                     
     def make_config_file(self, output_path):
         """Create a final Locust config file from the internal config.
@@ -959,34 +961,6 @@ class LocustConfig:
             entry = cls._key_to_var_dict[k]
             print(entry[0].ljust(25) + entry[1])
     
-def _get_unknown_parameters(kwargs):
-    # Return a set with unknown parameters
-    #
-    # Gets the list of accepted keys of the KassConfig and the LocustConfig.
-    # The set is created from any keys in the input that is not part of any of
-    # the two.
-    #
-    # Parameters
-    # ----------
-    # kwargs : dict
-    #       dictionary of keyword arguments
-    
-    accepted_parameters = ( KassConfig.get_accepted_keys() 
-                            + LocustConfig.get_accepted_keys() )
-                            
-    return set(kwargs.keys()).difference(accepted_parameters)
-    
-def trigger_unknown_parameter_warnings(kwargs):
-    # Print warnings for keyword arguments that are unknown to KassConfig/LocustConfig
-    #
-    # Useful addition since it is possible to enter an arbitrary number of
-    # keyword arguments in the SimConfig. Not strictly necessary but helps
-    # to prevent frustration due to typos.
-    
-    unknown_parameters = _get_unknown_parameters(kwargs)
-    
-    for parameter in unknown_parameters:
-        print('WARNING - unknown parameter "{}" is ignored'.format(parameter))
 
 class SimConfig:
     """A class for the entire simulation configuration.
@@ -1030,8 +1004,6 @@ class SimConfig:
         ValueError
             If phase is not 'Phase2' or 'Phase3'.
         """
-                        
-        trigger_unknown_parameter_warnings(kwargs)
         
         self._sim_name = sim_name
         self._phase = phase
@@ -1043,6 +1015,37 @@ class SimConfig:
         self._kass_config = KassConfig( phase = phase, 
                                         kass_file_name = kass_file_name, 
                                         **kwargs)
+                                        
+        self._trigger_unknown_parameter_warnings(kwargs)
+                                        
+    def _get_unknown_parameters(self, kwargs):
+        # Return a set with unknown parameters
+        #
+        # Gets the list of accepted keys of the KassConfig and the LocustConfig.
+        # The set is created from any keys in the input that is not part of any of
+        # the two.
+        #
+        # Parameters
+        # ----------
+        # kwargs : dict
+        #       dictionary of keyword arguments
+        
+        accepted_parameters = ( self._kass_config.get_accepted_keys() 
+                                + self._locust_config.get_accepted_keys() )
+                                
+        return set(kwargs.keys()).difference(accepted_parameters)
+        
+    def _trigger_unknown_parameter_warnings(self, kwargs):
+        # Print warnings for keyword arguments that are unknown to KassConfig/LocustConfig
+        #
+        # Useful addition since it is possible to enter an arbitrary number of
+        # keyword arguments in the SimConfig. Not strictly necessary but helps
+        # to prevent frustration due to typos.
+        
+        unknown_parameters = self._get_unknown_parameters(kwargs)
+        
+        for parameter in unknown_parameters:
+            print('WARNING - unknown parameter "{}" is ignored'.format(parameter))
     
     @property
     def sim_name(self):
