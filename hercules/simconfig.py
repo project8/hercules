@@ -733,6 +733,7 @@ class LocustConfig:
     def __init__(self,                
                 phase = 'Phase3',
                 locust_file_name = None,
+                unknown_args_translation = {},
                 **kwargs):
         """
         Parameters
@@ -746,12 +747,23 @@ class LocustConfig:
             The file has to be placed in hercules/hexbug/PHASE/, where
             PHASE is the value of the other parameter. If no file name given
             a default file specific to the phase will be used (recommended).
+        unknown_args_translation: dict, optional
+            Dictionary to expand the internal translation from parameter names
+            to the configuration file dictionary. This is used to make hercules 
+            understand parameters that are internally still unknown to it. For
+            example when you want to modify a new parameter 'example-parameter' 
+            in the 'array-signal' part of the Locust config file you can call 
+            __init__ with a keyword 'example_parameter' (via **kwargs).
+            To tell hercules what to do with 'example_parameter' you use
+            unknown_args_translation={'example_parameter': ['array-signal', 'example-parameter']}. 
         
         Raises
         ------
         ValueError
             If phase is not 'Phase2' or 'Phase3'.
         """
+        
+        self._add_unknown_args_translation(unknown_args_translation)
 
         self._config_dict = _set_dict_2d(self._key_dict, self._key_to_var_dict, 
                                             kwargs)
@@ -767,6 +779,15 @@ class LocustConfig:
         self._finalize(templateConfig)
 
     # -------- private part --------
+    
+    def _add_unknown_args_translation(self, unknown_args_translation):
+        # Add the translation of unknown arguments to _expression_dict_simple 
+        for key in unknown_args_translation:
+            key_0 = unknown_args_translation[key][0]
+            key_1 = unknown_args_translation[key][1]
+            self._key_to_var_dict[key_1] = [key, '']
+            self._key_dict[key_0].append(key_1)
+            
     
     def _handle_phase(self, phase, file_name):
         # Read the phase parameter and take appropriate actions according to input
