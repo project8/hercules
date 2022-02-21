@@ -13,6 +13,7 @@ import json
 import re
 from pathlib import Path, PosixPath
 from abc import ABC, abstractmethod
+from copy import deepcopy
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME_P2, KASS_CONFIG_NAME_P2,
@@ -137,6 +138,7 @@ class KassConfig:
     def __init__(self,
                 phase = 'Phase3',
                 kass_file_name = None,
+                unknown_args_translation = {},
                 **kwargs):
         """
         Parameters
@@ -150,6 +152,16 @@ class KassConfig:
             The file has to be placed in hercules/hexbug/PHASE/, where
             PHASE is the value of the other parameter. If no file name given
             a default file specific to the phase will be used (recommended).
+        unknown_args_translation: dict, optional
+            Dictionary to expand the internal translation from parameter names
+            to configuration file expressions. This is used to make hercules 
+            understand parameters that are internally still unknown to it. For
+            example when you want to modify the magnetic field in x direction 
+            you can call __init__ with a keyword 'b_x' (via **kwargs).
+            In the config file this corresponds to the line 
+            '<external_define name="fieldX" value="0.0"/>'.
+            Therefore to tell hercules what to do with 'b_x' you use
+            unknown_args_translation={'b_x': '<external_define name="fieldX" value='}. 
         **kwargs :
             Arbitrary number of keyword arguments.
                     
@@ -158,7 +170,9 @@ class KassConfig:
         ValueError
             If phase is not 'Phase2' or 'Phase3'.
         """
-    
+        
+        self._add_unknown_args_translation(unknown_args_translation)
+            
         # pass the arbitrary number of keyword arguments as a dict to the read
         # method
         self._read_config_dict(kwargs)
@@ -172,6 +186,13 @@ class KassConfig:
  
     # -------- private part --------
     
+    def _add_unknown_args_translation(self, unknown_args_translation):
+        # Add the translation of unknown arguments to _expression_dict_simple
+        self._expression_dict_simple = self._expression_dict_simple.copy()#prevent overriding the class level dict
+        for key in unknown_args_translation:
+            self._expression_dict_simple[key] = [unknown_args_translation[key], '']
+        
+        
     def _read_config_dict(self, config_dict):
         # Read a config dict into the internal config dict
         #
@@ -474,8 +495,8 @@ class KassConfig:
     def config_dict(self):
         return self._config_dict 
         
-    @classmethod
-    def get_accepted_keys(cls):
+
+    def get_accepted_keys(self):
         """Return a list of keys that are accepted by the internal config dict.
         
         Returns
@@ -484,13 +505,14 @@ class KassConfig:
             list of the accepted keys
         """
         
-        keys = list(cls._expression_dict_simple.keys())
-        keys = keys + list(cls._expression_dict_complex.keys())
+        keys = list(self._expression_dict_simple.keys())
+        keys = keys + list(self._expression_dict_complex.keys())
         
-        for key in cls._expression_dict_complex:
+        for key in self._expression_dict_complex:
             keys.append(key[:-3]+'max')
             
         return keys
+        
     
     @classmethod
     def print_keyword_documentation(cls):
@@ -714,6 +736,7 @@ class LocustConfig:
     def __init__(self,                
                 phase = 'Phase3',
                 locust_file_name = None,
+                unknown_args_translation = {},
                 **kwargs):
         """
         Parameters
@@ -727,12 +750,23 @@ class LocustConfig:
             The file has to be placed in hercules/hexbug/PHASE/, where
             PHASE is the value of the other parameter. If no file name given
             a default file specific to the phase will be used (recommended).
+        unknown_args_translation: dict, optional
+            Dictionary to expand the internal translation from parameter names
+            to the configuration file dictionary. This is used to make hercules 
+            understand parameters that are internally still unknown to it. For
+            example when you want to modify a new parameter 'example-parameter' 
+            in the 'array-signal' part of the Locust config file you can call 
+            __init__ with a keyword 'example_parameter' (via **kwargs).
+            To tell hercules what to do with 'example_parameter' you use
+            unknown_args_translation={'example_parameter': ['array-signal', 'example-parameter']}. 
         
         Raises
         ------
         ValueError
             If phase is not 'Phase2' or 'Phase3'.
         """
+        
+        self._add_unknown_args_translation(unknown_args_translation)
 
         self._config_dict = _set_dict_2d(self._key_dict, self._key_to_var_dict, 
                                             kwargs)
@@ -748,6 +782,17 @@ class LocustConfig:
         self._finalize(templateConfig)
 
     # -------- private part --------
+    
+    def _add_unknown_args_translation(self, unknown_args_translation):
+        # Add the translation of unknown arguments to _expression_dict_simple 
+        self._key_to_var_dict = deepcopy(self._key_to_var_dict) #prevent overriding the class level dict
+        self._key_dict = deepcopy(self._key_dict)
+        for key in unknown_args_translation:
+            key_0 = unknown_args_translation[key][0]
+            key_1 = unknown_args_translation[key][1]
+            self._key_to_var_dict[key_1] = [key, '']
+            self._key_dict[key_0].append(key_1)
+            
     
     def _handle_phase(self, phase, file_name):
         # Read the phase parameter and take appropriate actions according to input
@@ -886,9 +931,9 @@ class LocustConfig:
         name = path.name
         self._set(self._signal_key, self._xml_filename_key, 
                     str(OUTPUT_DIR_CONTAINER / name))
-    
-    @classmethod
-    def get_accepted_keys(cls):
+                    
+                    
+    def get_accepted_keys(self):
         """Return a list of keys that are accepted for the internal config dict.
         
         Returns
@@ -896,8 +941,9 @@ class LocustConfig:
         list
             list of the accepted keys
         """
-        vals = cls._key_to_var_dict.values()
+        vals = self._key_to_var_dict.values()
         return [val[0] for val in vals]
+                    
                     
     def make_config_file(self, output_path):
         """Create a final Locust config file from the internal config.
@@ -919,34 +965,6 @@ class LocustConfig:
             entry = cls._key_to_var_dict[k]
             print(entry[0].ljust(25) + entry[1])
     
-def _get_unknown_parameters(kwargs):
-    # Return a set with unknown parameters
-    #
-    # Gets the list of accepted keys of the KassConfig and the LocustConfig.
-    # The set is created from any keys in the input that is not part of any of
-    # the two.
-    #
-    # Parameters
-    # ----------
-    # kwargs : dict
-    #       dictionary of keyword arguments
-    
-    accepted_parameters = ( KassConfig.get_accepted_keys() 
-                            + LocustConfig.get_accepted_keys() )
-                            
-    return set(kwargs.keys()).difference(accepted_parameters)
-    
-def trigger_unknown_parameter_warnings(kwargs):
-    # Print warnings for keyword arguments that are unknown to KassConfig/LocustConfig
-    #
-    # Useful addition since it is possible to enter an arbitrary number of
-    # keyword arguments in the SimConfig. Not strictly necessary but helps
-    # to prevent frustration due to typos.
-    
-    unknown_parameters = _get_unknown_parameters(kwargs)
-    
-    for parameter in unknown_parameters:
-        print('WARNING - unknown parameter "{}" is ignored'.format(parameter))
 
 class SimConfig:
     """A class for the entire simulation configuration.
@@ -961,7 +979,9 @@ class SimConfig:
     """
     
     def __init__(self, sim_name, phase = 'Phase3', kass_file_name = None, 
-                    locust_file_name = None, **kwargs):
+                    kass_unknown_args_translation = {},
+                    locust_file_name = None,
+                    locust_unknown_args_translation = {}, **kwargs):
         """
         Parameters
         ----------
@@ -976,12 +996,32 @@ class SimConfig:
             The file has to be placed in hercules/hexbug/PHASE/, where
             PHASE is the value of the other parameter. If no file name given
             a default file specific to the phase will be used (recommended).
+        kass_unknown_args_translation: dict, optional
+            Dictionary to expand the internal translation from parameter names
+            to configuration file expressions. This is used to make hercules 
+            understand parameters for the Kassiopeia configuration that are 
+            internally still unknown to it. For example when you want to modify 
+            the magnetic field in x direction you can call __init__ with a 
+            keyword 'b_x' (via **kwargs). In the config file this corresponds 
+            to the line '<external_define name="fieldX" value="0.0"/>'.
+            Therefore, to tell hercules what to do with 'b_x' you use
+            kass_unknown_args_translation={'b_x': '<external_define name="fieldX" value='}. 
         locust_file_name : str, optional
             The name for the Locust configuration file that should
             be used. This means only the file name, not the full path!
             The file has to be placed in hercules/hexbug/PHASE/, where
             PHASE is the value of the other parameter. If no file name given
             a default file specific to the phase will be used (recommended).
+        locust_unknown_args_translation: dict, optional
+            Dictionary to expand the internal translation from parameter names
+            to the configuration file dictionary. This is used to make hercules 
+            understand parameters for the Locust configuration that are 
+            internally still unknown to it. For example when you want to modify 
+            a new parameter 'example-parameter' in the 'array-signal' part of 
+            the Locust config file you can call __init__ with a keyword 
+            'example_parameter' (via **kwargs). To tell hercules what to do 
+            with 'example_parameter' you use
+            locust_unknown_args_translation={'example_parameter': ['array-signal', 'example-parameter']}. 
         **kwargs :
             Arbitrary number of keyword arguments.
         
@@ -990,19 +1030,50 @@ class SimConfig:
         ValueError
             If phase is not 'Phase2' or 'Phase3'.
         """
-                        
-        trigger_unknown_parameter_warnings(kwargs)
         
         self._sim_name = sim_name
         self._phase = phase
         
         self._locust_config = LocustConfig(phase = phase, 
-                                           locust_file_name = locust_file_name, 
+                                           locust_file_name = locust_file_name,
+                                           unknown_args_translation = locust_unknown_args_translation, 
                                            **kwargs)
                                         
         self._kass_config = KassConfig( phase = phase, 
                                         kass_file_name = kass_file_name, 
+                                        unknown_args_translation = kass_unknown_args_translation,
                                         **kwargs)
+                                        
+        self._trigger_unknown_parameter_warnings(kwargs)
+                                        
+    def _get_unknown_parameters(self, kwargs):
+        # Return a set with unknown parameters
+        #
+        # Gets the list of accepted keys of the KassConfig and the LocustConfig.
+        # The set is created from any keys in the input that is not part of any of
+        # the two.
+        #
+        # Parameters
+        # ----------
+        # kwargs : dict
+        #       dictionary of keyword arguments
+        
+        accepted_parameters = ( self._kass_config.get_accepted_keys() 
+                                + self._locust_config.get_accepted_keys() )
+                                
+        return set(kwargs.keys()).difference(accepted_parameters)
+        
+    def _trigger_unknown_parameter_warnings(self, kwargs):
+        # Print warnings for keyword arguments that are unknown to KassConfig/LocustConfig
+        #
+        # Useful addition since it is possible to enter an arbitrary number of
+        # keyword arguments in the SimConfig. Not strictly necessary but helps
+        # to prevent frustration due to typos.
+        
+        unknown_parameters = self._get_unknown_parameters(kwargs)
+        
+        for parameter in unknown_parameters:
+            print('WARNING - unknown parameter "{}" is ignored'.format(parameter))
     
     @property
     def sim_name(self):
