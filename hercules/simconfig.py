@@ -137,6 +137,7 @@ class KassConfig:
     def __init__(self,
                 phase = 'Phase3',
                 kass_file_name = None,
+                unknown_args_translation = {},
                 **kwargs):
         """
         Parameters
@@ -150,6 +151,16 @@ class KassConfig:
             The file has to be placed in hercules/hexbug/PHASE/, where
             PHASE is the value of the other parameter. If no file name given
             a default file specific to the phase will be used (recommended).
+        unknown_args_translation: dict, optional
+            Dictionary to expand the internal translation from parameter names
+            to configuration file expressions. This is used to make hercules 
+            understand parameters that are internally still unknown to it. For
+            example when you want to modify the magnetic field in x direction 
+            you can call __init__ with a keyword 'b_x' (via **kwargs).
+            In the config file this corresponds to the line 
+            '<external_define name="fieldX" value="0.0"/>'.
+            Therefore to tell hercules what to do with 'b_x' you use
+            unknown_args_translation={'b_x': '<external_define name="fieldX" value='}. 
         **kwargs :
             Arbitrary number of keyword arguments.
                     
@@ -158,7 +169,9 @@ class KassConfig:
         ValueError
             If phase is not 'Phase2' or 'Phase3'.
         """
-    
+        
+        self._add_unknown_args_translation(unknown_args_translation)
+            
         # pass the arbitrary number of keyword arguments as a dict to the read
         # method
         self._read_config_dict(kwargs)
@@ -172,6 +185,12 @@ class KassConfig:
  
     # -------- private part --------
     
+    def _add_unknown_args_translation(self, unknown_args_translation):
+        # Add the translation of unknown arguments to _expression_dict_simple 
+        for key in unknown_args_translation:
+            self._expression_dict_simple[key] = [unknown_args_translation[key], '']
+        
+        
     def _read_config_dict(self, config_dict):
         # Read a config dict into the internal config dict
         #
