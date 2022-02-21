@@ -979,7 +979,9 @@ class SimConfig:
     """
     
     def __init__(self, sim_name, phase = 'Phase3', kass_file_name = None, 
-                    locust_file_name = None, **kwargs):
+                    kass_unknown_args_translation = {},
+                    locust_file_name = None,
+                    locust_unknown_args_translation = {}, **kwargs):
         """
         Parameters
         ----------
@@ -994,12 +996,32 @@ class SimConfig:
             The file has to be placed in hercules/hexbug/PHASE/, where
             PHASE is the value of the other parameter. If no file name given
             a default file specific to the phase will be used (recommended).
+        kass_unknown_args_translation: dict, optional
+            Dictionary to expand the internal translation from parameter names
+            to configuration file expressions. This is used to make hercules 
+            understand parameters for the Kassiopeia configuration that are 
+            internally still unknown to it. For example when you want to modify 
+            the magnetic field in x direction you can call __init__ with a 
+            keyword 'b_x' (via **kwargs). In the config file this corresponds 
+            to the line '<external_define name="fieldX" value="0.0"/>'.
+            Therefore, to tell hercules what to do with 'b_x' you use
+            kass_unknown_args_translation={'b_x': '<external_define name="fieldX" value='}. 
         locust_file_name : str, optional
             The name for the Locust configuration file that should
             be used. This means only the file name, not the full path!
             The file has to be placed in hercules/hexbug/PHASE/, where
             PHASE is the value of the other parameter. If no file name given
             a default file specific to the phase will be used (recommended).
+        locust_unknown_args_translation: dict, optional
+            Dictionary to expand the internal translation from parameter names
+            to the configuration file dictionary. This is used to make hercules 
+            understand parameters for the Locust configuration that are 
+            internally still unknown to it. For example when you want to modify 
+            a new parameter 'example-parameter' in the 'array-signal' part of 
+            the Locust config file you can call __init__ with a keyword 
+            'example_parameter' (via **kwargs). To tell hercules what to do 
+            with 'example_parameter' you use
+            locust_unknown_args_translation={'example_parameter': ['array-signal', 'example-parameter']}. 
         **kwargs :
             Arbitrary number of keyword arguments.
         
@@ -1013,11 +1035,13 @@ class SimConfig:
         self._phase = phase
         
         self._locust_config = LocustConfig(phase = phase, 
-                                           locust_file_name = locust_file_name, 
+                                           locust_file_name = locust_file_name,
+                                           unknown_args_translation = locust_unknown_args_translation, 
                                            **kwargs)
                                         
         self._kass_config = KassConfig( phase = phase, 
                                         kass_file_name = kass_file_name, 
+                                        unknown_args_translation = kass_unknown_args_translation,
                                         **kwargs)
                                         
         self._trigger_unknown_parameter_warnings(kwargs)
