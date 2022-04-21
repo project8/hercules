@@ -770,14 +770,15 @@ class LocustConfig:
 
         self._config_dict = _set_dict_2d(self._key_dict, self._key_to_var_dict, 
                                             kwargs)
+        self._config_dict.pop(self._generators_key)
                      
         self._handle_phase(phase, locust_file_name)
         templateConfig = _get_json_from_file(self._file_name)
         
-        self._config_dict[self._generators_key] = [self._signal_key,
-                                                    self._fft_key, 
-                                                    self._decimate_key, 
-                                                    self._digit_key]
+      #  self._config_dict[self._generators_key] = [self._signal_key,
+      #                                              self._fft_key, 
+      #                                              self._decimate_key, 
+      #                                              self._digit_key]
         
         self._finalize(templateConfig)
 
