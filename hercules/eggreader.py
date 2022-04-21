@@ -93,9 +93,12 @@ class LocustP3File:
         bit_depth = attr['bit_depth']
         voltage_range = attr['voltage_range']
         voltage_offset = attr['voltage_offset']
-        result = data / self._int_max[
-            bit_depth] * voltage_range + voltage_offset + 1j * voltage_offset
-        return result
+        
+        if attr['data_format'] == 2:
+        #data is already analog
+            return data
+        else:
+            return data / self._int_max[bit_depth] * voltage_range + voltage_offset + 1j * voltage_offset
 
     def _read_ts(self, s, attr):
         """
