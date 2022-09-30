@@ -267,7 +267,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         self._gen_command_script(output_dir)
 
         cmd = self._assemble_command(output_dir)
-        
+        print("Submitting Job:", cmd)
+
         with open(output_dir/'log.out', 'w+') as log, open(output_dir/'log.err', 'w+') as err:
             p = subprocess.Popen(cmd, shell=True, stdout=log, stderr=err)
         
