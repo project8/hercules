@@ -14,6 +14,8 @@ import subprocess
 from abc import ABC, abstractmethod
 import concurrent.futures as cf
 from tqdm import tqdm
+from math import sqrt, atan2
+import pickle
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME, KASS_CONFIG_NAME, SIM_CONFIG_NAME, 
@@ -170,8 +172,39 @@ class AbstractKassLocustP3(ABC):
         self._working_dir=Path(working_dir)
         self._working_dir.mkdir(parents=True, exist_ok=True)
         
-    @abstractmethod
     def __call__(self, config_list):
+        """Run a list of simulation jobs in parallel and make the index dictionary file.
+        
+        Parameters
+        ----------
+        config_list : list
+            A list of SimConfig objects
+        """
+        
+        self.make_index(config_list)
+        self.run(config_list)
+        
+    def make_index(self, config_list):
+        
+        index = {}
+        
+        for sim_config in config_list:
+            path = sim_config.sim_name
+            x = sim_config._kass_config._config_dict['x_min']
+            y = sim_config._kass_config._config_dict['y_min']
+            z = sim_config._kass_config._config_dict['z_min']
+            pitch = sim_config._kass_config._config_dict['theta_min']
+            energy = sim_config._kass_config._config_dict['energy']
+            
+            r = sqrt(x**2 + y**2)
+            phi = atan2(y, x)
+            
+            index[energy, pitch, r, phi, z] = path
+            
+        pickle.dump(index, open(self._working_dir/'index.p', "wb"))
+    
+    @abstractmethod
+    def run(self, config_list):
         """Run a list of simulation jobs in parallel.
         
         Parameters
@@ -181,6 +214,7 @@ class AbstractKassLocustP3(ABC):
         """
         
         pass
+        
         
     @staticmethod
     def factory(name, working_dir):
@@ -230,7 +264,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
                             
         AbstractKassLocustP3.__init__(self, working_dir, direct)
     
-    def __call__(self, sim_config_list):
+    def run(self, sim_config_list):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
         
         Runs a list of simulation jobs in parallel.
@@ -344,7 +378,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         
         AbstractKassLocustP3.__init__(self, working_dir, direct)
         
-    def __call__(self, config_list):
+    def run(self, config_list):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
         
         Runs a list of simulation jobs in parallel.
