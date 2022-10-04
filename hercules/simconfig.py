@@ -323,8 +323,12 @@ class KassConfig:
         for key in self._expression_dict_simple:
             #if self._config_dict[key] is None:
             if key not in self._config_dict:
-                self._config_dict[key] =(
-                    self._get_val(self._expression_dict_simple[key][0], self._xml) )
+                val = self._get_val(self._expression_dict_simple[key][0], self._xml)
+                try:
+                    val_f = float(val)
+                except ValueError:
+                    val_f = val
+                self._config_dict[key] = val_f
                 
     def _add_complex_defaults(self):
         # Add default values to the internal config dict
@@ -337,8 +341,8 @@ class KassConfig:
             if key not in self._config_dict:
                 minVal, maxVal =( 
                     self._get_min_max_val(self._expression_dict_complex[key][0], self._xml))
-                self._config_dict[key] = minVal
-                self._config_dict[key[:-3]+'max'] = maxVal
+                self._config_dict[key] = float(minVal)
+                self._config_dict[key[:-3]+'max'] = float(maxVal)
      
     def _replace_simple_val(self, expression, value, string):
         # Replace a value in a Kassiopeia config
