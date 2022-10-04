@@ -318,8 +318,6 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         
         bash_command = ('"'
                        + str(OUTPUT_DIR_CONTAINER/self._command_script_name)
-                       + ' '
-                       + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME)
                        + '"')
                        
         docker_command = '/bin/bash -c ' + bash_command
@@ -351,7 +349,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
                                  str(self._p8_compute_dir/'setup.sh'))
         kasper_env = _char_concatenate(' ', 'source',
                                  str(self._p8_locust_dir/'bin'/'kasperenv.sh'))
-        locust = 'LocustSim config=$1'
+        locust = ('LocustSim config='
+                  + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME))
         
         commands = _char_concatenate('\n', shebang, p8_env, kasper_env, locust)
 
