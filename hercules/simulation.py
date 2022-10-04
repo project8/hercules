@@ -161,7 +161,7 @@ class AbstractKassLocustP3(ABC):
     _p8_locust_dir = PosixPath(CONFIG.locust_path) / CONFIG.locust_version
     _p8_compute_dir = PosixPath(CONFIG.p8compute_path) / CONFIG.p8compute_version
         
-    def __init__(self, working_dir, direct=True):
+    def __init__(self, working_dir, use_locust=True, use_kass=False, direct=True):
         
         #no docstring since no user should directly instantiate this class
             
@@ -169,6 +169,8 @@ class AbstractKassLocustP3(ABC):
         if direct:
             raise ValueError('Direct instantiation forbidden')
             
+        self._use_locust= use_locust
+        self._use_kass= use_kass
         self._working_dir=Path(working_dir)
         self._working_dir.mkdir(parents=True, exist_ok=True)
         
@@ -217,7 +219,7 @@ class AbstractKassLocustP3(ABC):
         
         
     @staticmethod
-    def factory(name, working_dir):
+    def factory(name, working_dir, use_locust=True, use_kass=False):
         """Return an instance of one of the derived classes.
         
         Parameters
@@ -240,9 +242,11 @@ class AbstractKassLocustP3(ABC):
         """
             
         if name == 'grace':
-            return KassLocustP3Cluster(working_dir, direct=False)
+            return KassLocustP3Cluster(working_dir, use_locust=use_locust,
+                                        use_kass=use_kass, direct=False)
         elif name == 'desktop':
-            return KassLocustP3Desktop(working_dir, direct=False)
+            return KassLocustP3Desktop(working_dir, use_locust=use_locust,
+                                        use_kass=use_kass, direct=False)
         else:
             raise ValueError('Bad KassLocustP3 creation : ' + name)
 
@@ -254,7 +258,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
     _container = CONFIG.container
     _max_workers = int(CONFIG.desktop_parallel_jobs)
 
-    def __init__(self, working_dir, direct=True):
+    def __init__(self, working_dir, use_locust=True, 
+                    use_kass=False, direct=True):
         """
         Parameters
         ----------
@@ -262,7 +267,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
             The string for the path of the working directory
         """
                             
-        AbstractKassLocustP3.__init__(self, working_dir, direct)
+        AbstractKassLocustP3.__init__(self, working_dir, use_locust=use_locust,
+                                        use_kass=use_kass, direct=direct)
     
     def run(self, sim_config_list):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
@@ -349,10 +355,16 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
                                  str(self._p8_compute_dir/'setup.sh'))
         kasper_env = _char_concatenate(' ', 'source',
                                  str(self._p8_locust_dir/'bin'/'kasperenv.sh'))
-        locust = ('LocustSim config='
-                  + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME))
+                  
+        if self._use_locust:
+            sim_command = ('LocustSim config='
+                      + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME))
+        else: 
+            if self._use_kass:
+                sim_command = ('Kassiopeia '
+                               + str(OUTPUT_DIR_CONTAINER/KASS_CONFIG_NAME))
         
-        commands = _char_concatenate('\n', shebang, p8_env, kasper_env, locust)
+        commands = _char_concatenate('\n', shebang, p8_env, kasper_env, sim_command)
 
         script = output_dir/self._command_script_name
         with open(script, 'w') as out_file:
@@ -367,7 +379,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
     _command_script_name = 'locustcommands.sh'
     _job_script_name = 'joblist%s.txt'
 
-    def __init__(self, working_dir, direct=True):
+    def __init__(self, working_dir, use_locust=True, 
+                use_kass=False, direct=True):
         """
         Parameters
         ----------
@@ -375,7 +388,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
             The string for the path of the working directory
         """
         
-        AbstractKassLocustP3.__init__(self, working_dir, direct)
+        AbstractKassLocustP3.__init__(self, working_dir, use_locust=use_locust,
+                                        use_kass=use_kass, direct=direct)
         
     def run(self, config_list):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
@@ -471,10 +485,16 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
                                  str(self._p8_compute_dir/'setup.sh'))
         kasper_env = _char_concatenate(' ', 'source',
                                  str(self._p8_locust_dir/'bin'/'kasperenv.sh'))
-        locust = ('exec LocustSim config='
-                  + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME))
+                                 
+        if self._use_locust:
+            sim_command = ('exec LocustSim config='
+                      + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME))
+        else: 
+            if self._use_kass:
+                sim_command = ('exec Kassiopeia '
+                               + str(OUTPUT_DIR_CONTAINER/KASS_CONFIG_NAME))
         
-        commands = _char_concatenate('\n', shebang, p8_env, kasper_env, locust)
+        commands = _char_concatenate('\n', shebang, p8_env, kasper_env, sim_command)
         
         script = output_dir / self._command_script_name
         with open(script, 'w') as out_file:
@@ -491,7 +511,7 @@ class KassLocustP3:
     this class, since it makes user scripts agnostic to the computing platform.
     """
     
-    def __init__(self, working_dir):
+    def __init__(self, working_dir, use_locust=True, use_kass=False):
         """
         Parameters
         ----------
@@ -500,7 +520,9 @@ class KassLocustP3:
         """
         
         self._kass_locust = AbstractKassLocustP3.factory(CONFIG.env, 
-                                                          working_dir)
+                                                          working_dir,
+                                                          use_locust=use_locust,
+                                                          use_kass=use_kass)
 
     def __call__(self, config_list):
         """Run a list of simulation jobs in parallel.
