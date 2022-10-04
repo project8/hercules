@@ -161,7 +161,8 @@ class AbstractKassLocustP3(ABC):
     _p8_locust_dir = PosixPath(CONFIG.locust_path) / CONFIG.locust_version
     _p8_compute_dir = PosixPath(CONFIG.p8compute_path) / CONFIG.p8compute_version
         
-    def __init__(self, working_dir, use_locust=True, use_kass=False, direct=True):
+    def __init__(self, working_dir, use_locust=True, use_kass=False,
+                        python_script=None, direct=True):
         
         #no docstring since no user should directly instantiate this class
             
@@ -171,6 +172,8 @@ class AbstractKassLocustP3(ABC):
             
         self._use_locust= use_locust
         self._use_kass= use_kass
+        self._python_script= python_script
+        self._python_script = None if python_script is None else HEXBUG_DIR / 'CRESana' / python_script
         self._working_dir=Path(working_dir)
         self._working_dir.mkdir(parents=True, exist_ok=True)
         
@@ -219,7 +222,8 @@ class AbstractKassLocustP3(ABC):
         
         
     @staticmethod
-    def factory(name, working_dir, use_locust=True, use_kass=False):
+    def factory(name, working_dir, use_locust=True, use_kass=False,
+                python_script=None):
         """Return an instance of one of the derived classes.
         
         Parameters
@@ -243,10 +247,12 @@ class AbstractKassLocustP3(ABC):
             
         if name == 'grace':
             return KassLocustP3Cluster(working_dir, use_locust=use_locust,
-                                        use_kass=use_kass, direct=False)
+                                        use_kass=use_kass,
+                                        python_script=python_script, direct=False)
         elif name == 'desktop':
             return KassLocustP3Desktop(working_dir, use_locust=use_locust,
-                                        use_kass=use_kass, direct=False)
+                                        use_kass=use_kass,
+                                        python_script=python_script, direct=False)
         else:
             raise ValueError('Bad KassLocustP3 creation : ' + name)
 
@@ -259,7 +265,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
     _max_workers = int(CONFIG.desktop_parallel_jobs)
 
     def __init__(self, working_dir, use_locust=True, 
-                    use_kass=False, direct=True):
+                    use_kass=False, python_script=None, direct=True):
         """
         Parameters
         ----------
@@ -268,7 +274,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         """
                             
         AbstractKassLocustP3.__init__(self, working_dir, use_locust=use_locust,
-                                        use_kass=use_kass, direct=direct)
+                                        use_kass=use_kass,
+                                        python_script=python_script, direct=direct)
     
     def run(self, sim_config_list):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
@@ -304,7 +311,9 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
 
         sim_config.make_config_file(locust_file, kass_file)
         sim_config.to_json(config_dump)
-        self._gen_command_script(output_dir)
+        
+        if self._use_locust or self._use_kass:
+            self._gen_command_script(output_dir)
 
         cmd = self._assemble_command(output_dir)
         print("Submitting Job:", cmd)
@@ -320,29 +329,37 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         #Assemble the docker command that runs the KassLocust simulation in the
         #p8compute container
         
-        docker_run = 'docker run -it --rm'
+        cmd = ''
         
-        bash_command = ('"'
-                       + str(OUTPUT_DIR_CONTAINER/self._command_script_name)
-                       + '"')
-                       
-        docker_command = '/bin/bash -c ' + bash_command
+        if self._use_locust or self._use_kass:
+            
+            docker_run = 'docker run -it --rm'
+            
+            bash_command = ('"'
+                           + str(OUTPUT_DIR_CONTAINER/self._command_script_name)
+                           + '"')
+                           
+            docker_command = '/bin/bash -c ' + bash_command
 
-        # share_working_dir = _gen_shared_dir_string(self._working_dir,
-        #                                     self._working_dir_container)
+            # share_working_dir = _gen_shared_dir_string(self._working_dir,
+            #                                     self._working_dir_container)
 
-        share_output_dir = _gen_shared_dir_string(output_dir,
-                                            OUTPUT_DIR_CONTAINER)
-                                            
-        share_hexbug_dir = _gen_shared_dir_string(HEXBUG_DIR, HEXBUG_DIR_CONTAINER)
+            share_output_dir = _gen_shared_dir_string(output_dir,
+                                                OUTPUT_DIR_CONTAINER)
+                                                
+            share_hexbug_dir = _gen_shared_dir_string(HEXBUG_DIR, HEXBUG_DIR_CONTAINER)
 
 
-        # cmd = _char_concatenate(' ', docker_run, share_working_dir,
-        #                             share_output_dir, share_hexbug_dir,
-        #                             self._container, docker_command)
-        cmd = _char_concatenate(' ', docker_run,
-                            share_output_dir, share_hexbug_dir,
-                            self._container, docker_command)
+            # cmd = _char_concatenate(' ', docker_run, share_working_dir,
+            #                             share_output_dir, share_hexbug_dir,
+            #                             self._container, docker_command)
+            cmd = _char_concatenate(' ', docker_run,
+                                share_output_dir, share_hexbug_dir,
+                                self._container, docker_command)
+            cmd += ';'
+                            
+        if self._python_script is not None:
+            cmd += 'python ' + str(self._python_script) + ' ' + str(output_dir)
 
         return cmd
         
@@ -355,7 +372,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
                                  str(self._p8_compute_dir/'setup.sh'))
         kasper_env = _char_concatenate(' ', 'source',
                                  str(self._p8_locust_dir/'bin'/'kasperenv.sh'))
-                  
+        sim_command = ''
         if self._use_locust:
             sim_command = ('LocustSim config='
                       + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME))
@@ -380,7 +397,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
     _job_script_name = 'joblist%s.txt'
 
     def __init__(self, working_dir, use_locust=True, 
-                use_kass=False, direct=True):
+                use_kass=False, python_script=None, direct=True):
         """
         Parameters
         ----------
@@ -389,7 +406,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         """
         
         AbstractKassLocustP3.__init__(self, working_dir, use_locust=use_locust,
-                                        use_kass=use_kass, direct=direct)
+                                        use_kass=use_kass,
+                                        python_script=python_script, direct=direct)
         
     def run(self, config_list):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
@@ -511,7 +529,8 @@ class KassLocustP3:
     this class, since it makes user scripts agnostic to the computing platform.
     """
     
-    def __init__(self, working_dir, use_locust=True, use_kass=False):
+    def __init__(self, working_dir, use_locust=True, use_kass=False,
+                python_script=None):
         """
         Parameters
         ----------
@@ -522,7 +541,8 @@ class KassLocustP3:
         self._kass_locust = AbstractKassLocustP3.factory(CONFIG.env, 
                                                           working_dir,
                                                           use_locust=use_locust,
-                                                          use_kass=use_kass)
+                                                          use_kass=use_kass,
+                                                          python_script=python_script)
 
     def __call__(self, config_list):
         """Run a list of simulation jobs in parallel.
