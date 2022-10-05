@@ -473,7 +473,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         #Assemble the singularity command that runs the KassLocust simulation 
         #in the p8compute singularity container
         
-        cmd = ''
+        cmd = '('
         
         if self._use_locust or self._use_kass:
         
@@ -485,12 +485,9 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
             container = str(self._singularity)
             run_script = str(OUTPUT_DIR_CONTAINER/self._command_script_name)
             
-            log = '>' + str(output_dir) + '/run_singularity.out'
-            err = '2>' + str(output_dir) + '/run_singularity.err'
-            
             singularity_cmd = _char_concatenate(' ', singularity_exec, share_output_dir, 
                                                 share_hexbug_dir, container, 
-                                                run_script, log, err)
+                                                run_script)
             
             check_failure = "if [ $? -gt 1 ];then scontrol requeue $SLURM_JOB_ID;fi"
                             
@@ -500,7 +497,9 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
             cmd += 'module load miniconda; conda activate hercules;'
             cmd += 'python ' + str(self._python_script) + ' ' + str(output_dir)
             
-        cmd += '\n'
+        log = '>' + str(output_dir) + '/log.out'
+        err = '2>' + str(output_dir) + '/log.err'
+        cmd += ') ' + log + ' ' + err + '\n'
         
         return cmd
     
