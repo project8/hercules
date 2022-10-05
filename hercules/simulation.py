@@ -499,6 +499,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         if self._python_script is not None:
             cmd += 'module load miniconda; conda activate hercules;'
             cmd += 'python ' + str(self._python_script) + ' ' + str(output_dir)
+            
+        cmd += '\n'
         
         return cmd
     
