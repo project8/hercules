@@ -492,7 +492,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
                                                 share_hexbug_dir, container, 
                                                 run_script, log, err)
             
-            check_failure = "if [ $? -gt 1 ];then scontrol requeue $SLURM_JOB_ID;fi;"
+            check_failure = "if [ $? -gt 1 ];then scontrol requeue $SLURM_JOB_ID;fi"
                             
             cmd += singularity_cmd + ';' + check_failure + ';'
             
