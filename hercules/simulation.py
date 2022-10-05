@@ -473,26 +473,34 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         #Assemble the singularity command that runs the KassLocust simulation 
         #in the p8compute singularity container
         
-        singularity_exec = 'singularity exec --no-home'
-        share_output_dir = _gen_shared_dir_string_singularity(output_dir,
-                                                        OUTPUT_DIR_CONTAINER)
-        share_hexbug_dir = _gen_shared_dir_string_singularity(HEXBUG_DIR, 
-                                                        HEXBUG_DIR_CONTAINER)
-        container = str(self._singularity)
-        run_script = str(OUTPUT_DIR_CONTAINER/self._command_script_name)
+        cmd = ''
         
-        log = '>' + str(output_dir) + '/run_singularity.out'
-        err = '2>' + str(output_dir) + '/run_singularity.err'
+        if self._use_locust or self._use_kass:
         
-        singularity_cmd = _char_concatenate(' ', singularity_exec, share_output_dir, 
-                                            share_hexbug_dir, container, 
-                                            run_script, log, err)
+            singularity_exec = 'singularity exec --no-home'
+            share_output_dir = _gen_shared_dir_string_singularity(output_dir,
+                                                            OUTPUT_DIR_CONTAINER)
+            share_hexbug_dir = _gen_shared_dir_string_singularity(HEXBUG_DIR, 
+                                                            HEXBUG_DIR_CONTAINER)
+            container = str(self._singularity)
+            run_script = str(OUTPUT_DIR_CONTAINER/self._command_script_name)
+            
+            log = '>' + str(output_dir) + '/run_singularity.out'
+            err = '2>' + str(output_dir) + '/run_singularity.err'
+            
+            singularity_cmd = _char_concatenate(' ', singularity_exec, share_output_dir, 
+                                                share_hexbug_dir, container, 
+                                                run_script, log, err)
+            
+            check_failure = "if [ $? -gt 1 ];then scontrol requeue $SLURM_JOB_ID;fi;"
+                            
+            cmd += singularity_cmd + ';' + check_failure + ';'
+            
+        if self._python_script is not None:
+            cmd += 'module load miniconda; conda activate hercules;'
+            cmd += 'python ' + str(self._python_script) + ' ' + str(output_dir)
         
-        check_failure = "if [ $? -gt 1 ];then scontrol requeue $SLURM_JOB_ID;fi;"
-                        
-        final_command = singularity_cmd + ';' + check_failure +'\n'
-        
-        return final_command
+        return cm
     
     def _gen_locust_script(self, output_dir):   
         #Generate the bash script with the commands for running locust
