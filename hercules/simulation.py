@@ -500,7 +500,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
             cmd += 'module load miniconda; conda activate hercules;'
             cmd += 'python ' + str(self._python_script) + ' ' + str(output_dir)
         
-        return cm
+        return cmd
     
     def _gen_locust_script(self, output_dir):   
         #Generate the bash script with the commands for running locust
