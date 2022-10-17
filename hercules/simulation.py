@@ -475,7 +475,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         cmd = ''
         for config in config_list:
             cmd += self._add_job(config)
-            cmd += ';'
+        
+        cmd +='\n'
         
         with open(self._joblist, 'a+') as out_file:
             out_file.write(cmd)
@@ -510,7 +511,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
             
         log = '>' + str(output_dir) + '/log.out'
         err = '2>' + str(output_dir) + '/log.err'
-        cmd += ') ' + log + ' ' + err + '\n'
+        cmd += ') ' + log + ' ' + err + ';'
         
         return cmd
     
