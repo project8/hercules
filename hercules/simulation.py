@@ -564,7 +564,7 @@ class KassLocustP3:
                                                           use_kass=use_kass,
                                                           python_script=python_script)
 
-    def __call__(self, config_list):
+    def __call__(self, config_list, **kwargs):
         """Run a list of simulation jobs in parallel.
         
         Parameters
@@ -574,5 +574,5 @@ class KassLocustP3:
         """
         if type(config_list) is not list:
             config_list = [config_list]
-        return self._kass_locust(config_list)
+        return self._kass_locust(config_list, **kwargs)
     
