@@ -22,6 +22,7 @@ LOCUST_CONFIG_NAME_P2 = 'LocustPhase2Template.json'
 KASS_CONFIG_NAME_P2 = 'Project8Phase2_electrons.xml'
 LOCUST_CONFIG_NAME_P3 = 'LocustPhase3Template.json'
 KASS_CONFIG_NAME_P3 = 'LocustKassElectrons.xml'
+PY_DATA_NAME = 'data.npy'
 
 LOCUST_CONFIG_NAME = 'Locust.json'
 KASS_CONFIG_NAME = 'LocustKassElectrons.xml'
