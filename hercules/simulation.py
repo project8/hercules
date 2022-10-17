@@ -179,7 +179,7 @@ class AbstractKassLocustP3(ABC):
         self._working_dir=Path(working_dir)
         self._working_dir.mkdir(parents=True, exist_ok=True)
         
-    def __call__(self, config_list):
+    def __call__(self, config_list, **kwargs):
         """Run a list of simulation jobs in parallel and make the index dictionary file.
         
         Parameters
@@ -189,7 +189,7 @@ class AbstractKassLocustP3(ABC):
         """
         
         self.make_index(config_list)
-        self.run(config_list)
+        self.run(config_list, **kwargs)
         
     def make_index(self, config_list):
         
@@ -198,7 +198,7 @@ class AbstractKassLocustP3(ABC):
         file_ind.dump()
     
     @abstractmethod
-    def run(self, config_list):
+    def run(self, config_list, **kwargs):
         """Run a list of simulation jobs in parallel.
         
         Parameters
@@ -266,7 +266,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
                                         use_kass=use_kass,
                                         python_script=python_script, direct=direct)
     
-    def run(self, sim_config_list):
+    def run(self, sim_config_list, **kwargs):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
         
         Runs a list of simulation jobs in parallel.
@@ -398,7 +398,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
                                         use_kass=use_kass,
                                         python_script=python_script, direct=direct)
         
-    def run(self, config_list):
+    def run(self, config_list, **kwargs):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
         
         Runs a list of simulation jobs in parallel.
@@ -414,20 +414,24 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         for config in config_list:
             self._add_job(config)
             
-        self._submit_job()
+        self._submit_job(**kwargs)
     
-    def _submit_job(self):
+    def _submit_job(self, **kwargs):
         #submits the whole list of jobs via dSQ
         #Based on https://github.com/project8/scripts/blob/master/YaleP8ComputeScripts/GeneratePhase3Sims.py
         
         module = 'module load dSQ;'
         
-        dsq = 'dsq --requeue --cpus-per-task=2 --submit'
+        n_cpus = 2 if self._use_locust else 1
+        memory = CONFIG.job_memory if 'memory' is not in kwargs else kwargs['memory']
+        timelimit = CONFIG.job_timelimit if 'timelimit' is not in kwargs else kwargs['timelimit']
+        
+        dsq = f'dsq --requeue --cpus-per-task={n_cpus} --submit'
         job_file = '--job-file ' + str(self._joblist)
         job_partition = '-p ' + CONFIG.partition
         job_limit = '--max-jobs ' + CONFIG.job_limit
-        job_memory = '--mem-per-cpu ' + CONFIG.job_memory +'m'
-        job_timelimit = '-t ' + CONFIG.job_timelimit
+        job_memory = '--mem-per-cpu ' + memory +'m'
+        job_timelimit = '-t ' + timelimit
         job_status = '--status-dir ' + str(self._working_dir)
         job_output = '--output /dev/null'
         
