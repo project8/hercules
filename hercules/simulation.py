@@ -411,7 +411,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         
         self._joblist = _create_file_race_condition_free(str(self._working_dir/self._job_script_name))
         
-        batch_size = 1 if 'batch_size' is not in kwargs else int(kwargs['batch_size'])
+        batch_size = 1 if 'batch_size' not in kwargs else int(kwargs['batch_size'])
         
         if batch_size<1:
             raise ValueError("'batch_size' needs to be >0")
@@ -430,8 +430,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         module = 'module load dSQ;'
         
         n_cpus = 2 if self._use_locust else 1
-        memory = CONFIG.job_memory if 'memory' is not in kwargs else kwargs['memory']
-        timelimit = CONFIG.job_timelimit if 'timelimit' is not in kwargs else kwargs['timelimit']
+        memory = CONFIG.job_memory if 'memory' not in kwargs else kwargs['memory']
+        timelimit = CONFIG.job_timelimit if 'timelimit' not in kwargs else kwargs['timelimit']
         
         dsq = f'dsq --requeue --cpus-per-task={n_cpus} --submit'
         job_file = '--job-file ' + str(self._joblist)
