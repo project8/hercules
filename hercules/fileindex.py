@@ -70,12 +70,6 @@ class FileIndex:
         
     def interpolate_all(self):
         
-        #~ self.r_int = interp1d(self.r, self.r, kind='nearest', bounds_error=None, fill_value='extrapolate')
-        #~ self.phi_int = interp1d(self.phi, self.phi, kind='nearest', bounds_error=None, fill_value='extrapolate')
-        #~ self.z_int = interp1d(self.z, self.z, kind='nearest', bounds_error=None, fill_value='extrapolate')
-        #~ self.pitch_int = interp1d(self.pitch, self.pitch, kind='nearest', bounds_error=None, fill_value='extrapolate')
-        #~ self.energy_int = interp1d(self.energy, self.energy, kind='nearest', bounds_error=None, fill_value='extrapolate')
-        
         self.r_int = self.interpolate(self.r)
         self.phi_int = self.interpolate(self.phi)
         self.z_int = self.interpolate(self.z)
@@ -94,11 +88,11 @@ class FileIndex:
     def get_data(self, energy, pitch, r, phi, z, interpolation=True):
         
         if interpolation:
-            energy_i = self.energy_int(energy)
-            pitch_i = self.pitch_int(pitch)
-            r_i = self.r_int(r)
-            phi_i = self.phi_int(phi)
-            z_i = self.z_int(z)
+            energy_i = self.energy_int(energy).item()
+            pitch_i = self.pitch_int(pitch).item()
+            r_i = self.r_int(r).item()
+            phi_i = self.phi_int(phi).item()
+            z_i = self.z_int(z).item()
         else:
             energy_i = energy
             pitch_i = pitch
@@ -108,7 +102,7 @@ class FileIndex:
     
         sim_path = self.index[energy_i, pitch_i, r_i, phi_i, z_i]
         
-        return load_sim(sim_path)
+        return self.load_sim(sim_path)
         
     def load_sim(self, path):
         return np.load(self.directory / path / PY_DATA_NAME)
