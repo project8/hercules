@@ -411,8 +411,15 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         
         self._joblist = _create_file_race_condition_free(str(self._working_dir/self._job_script_name))
         
-        for config in config_list:
-            self._add_job(config)
+        batch_size = 1 if 'batch_size' is not in kwargs else int(kwargs['batch_size'])
+        
+        if batch_size<1:
+            raise ValueError("'batch_size' needs to be >0")
+            
+        batches = [config_list[i:i + batch_size] for i in range(0, len(config_list), batch_size)]
+        
+        for batch in batches:
+            self._add_job_batch(batch)
             
         self._submit_job(**kwargs)
     
@@ -438,13 +445,12 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         cmd = _char_concatenate(' ', module, dsq, job_file, job_partition, 
                                 job_limit, job_memory, job_timelimit, 
                                 job_status, job_output)
+                                
+        print(cmd)
         
         subprocess.Popen(cmd, shell=True).wait()
         
-    def _add_job(self, sim_config: SimConfig):
-        #adds a job to the list of jobs
-        #Creates all the necessary configuration files, directories and the
-        #json output
+    def _add_job(self, sim_config):
         
         output_dir = self._working_dir / sim_config.sim_name
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -458,6 +464,18 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         
         self._gen_locust_script(output_dir)
         cmd = self._assemble_command(output_dir)
+        
+        return cmd
+        
+    def _add_job_batch(self, config_list):
+        #adds a job to the list of jobs
+        #Creates all the necessary configuration files, directories and the
+        #json output
+        
+        cmd = ''
+        for config in config_list:
+            cmd += self._add_job(config)
+            cmd += ';'
         
         with open(self._joblist, 'a+') as out_file:
             out_file.write(cmd)
