@@ -99,10 +99,11 @@ class FileIndex:
             r_i = r
             phi_i = phi
             z_i = z
-    
-        sim_path = self.index[energy_i, pitch_i, r_i, phi_i, z_i]
+            
+        parameters = (energy_i, pitch_i, r_i, phi_i, z_i)
+        sim_path = self.index[parameters]
         
-        return self.load_sim(sim_path)
+        return parameters, self.load_sim(sim_path)
         
     def load_sim(self, path):
         return np.load(self.directory / path / PY_DATA_NAME)
