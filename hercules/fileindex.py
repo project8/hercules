@@ -10,6 +10,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 import pickle
 from pathlib import Path
+from math import sqrt, atan2
 
 from .constants import PY_DATA_NAME
 
