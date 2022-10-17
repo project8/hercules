@@ -15,6 +15,15 @@ from math import sqrt, atan2
 from .constants import PY_DATA_NAME
 
 
+class Constant:
+    
+    def __init__(self, x):
+        
+        self.x = x
+        
+    def __call__(self, x):
+        return self.x
+
 class FileIndex:
     
     def __init__(self, directory):
@@ -22,6 +31,8 @@ class FileIndex:
         self.directory = Path(directory)
         
     def make_index(self, config_list):
+        
+        print('Making file index')
         
         self.index = {}
         r_np = np.empty(len(config_list))
@@ -50,10 +61,10 @@ class FileIndex:
             energy_np[i] = energy
             
         self.r = np.sort(np.unique(r_np))
-        self.phi = np.sort(np.unique(phi))
-        self.z = np.sort(np.unique(z))
-        self.pitch = np.sort(np.unique(pitch))
-        self.energy = np.sort(np.unique(energy))
+        self.phi = np.sort(np.unique(phi_np))
+        self.z = np.sort(np.unique(z_np))
+        self.pitch = np.sort(np.unique(pitch_np))
+        self.energy = np.sort(np.unique(energy_np))
         
         self.interpolate_all()
         
@@ -76,7 +87,7 @@ class FileIndex:
         if len(x)>1:
             x_int = interp1d(x, x, kind='nearest', bounds_error=None, fill_value='extrapolate')
         else:
-            x_int = lambda y: x
+            x_int = Constant(x)
             
         return x_int
         
