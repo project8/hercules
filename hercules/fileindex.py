@@ -41,7 +41,7 @@ class FileIndex:
             r = sqrt(x**2 + y**2)
             phi = atan2(y, x)
             
-            index[energy, pitch, r, phi, z] = path
+            self.index[energy, pitch, r, phi, z] = path
             
             r_np[i] = r
             phi_np[i] = phi
@@ -55,15 +55,30 @@ class FileIndex:
         self.pitch = np.sort(np.unique(pitch))
         self.energy = np.sort(np.unique(energy))
         
-        self.interpolate()
+        self.interpolate_all()
         
-    def interpolate(self):
+    def interpolate_all(self):
         
-        self.r_int = interp1d(self.r, self.r, kind='nearest', bounds_error=None, fill_value='extrapolate')
-        self.phi_int = interp1d(self.phi, self.phi, kind='nearest', bounds_error=None, fill_value='extrapolate')
-        self.z_int = interp1d(self.z, self.z, kind='nearest', bounds_error=None, fill_value='extrapolate')
-        self.pitch_int = interp1d(self.pitch, self.pitch, kind='nearest', bounds_error=None, fill_value='extrapolate')
-        self.energy_int = interp1d(self.energy, self.energy, kind='nearest', bounds_error=None, fill_value='extrapolate')
+        #~ self.r_int = interp1d(self.r, self.r, kind='nearest', bounds_error=None, fill_value='extrapolate')
+        #~ self.phi_int = interp1d(self.phi, self.phi, kind='nearest', bounds_error=None, fill_value='extrapolate')
+        #~ self.z_int = interp1d(self.z, self.z, kind='nearest', bounds_error=None, fill_value='extrapolate')
+        #~ self.pitch_int = interp1d(self.pitch, self.pitch, kind='nearest', bounds_error=None, fill_value='extrapolate')
+        #~ self.energy_int = interp1d(self.energy, self.energy, kind='nearest', bounds_error=None, fill_value='extrapolate')
+        
+        self.r_int = self.interpolate(self.r)
+        self.phi_int = self.interpolate(self.phi)
+        self.z_int = self.interpolate(self.z)
+        self.pitch_int = self.interpolate(self.pitch)
+        self.energy_int = self.interpolate(self.energy)      
+        
+    def interpolate(self, x):
+        
+        if len(x)>1:
+            x_int = interp1d(x, x, kind='nearest', bounds_error=None, fill_value='extrapolate')
+        else:
+            x_int = lambda y: x
+            
+        return x_int
         
     def get_data(self, energy, pitch, r, phi, z, interpolation=True):
         
