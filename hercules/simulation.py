@@ -8,7 +8,6 @@ Date: February 19, 2021
 
 __all__ = ['KassLocustP3']
 
-from hercules.simconfig import SimConfig
 from pathlib import Path, PosixPath
 import subprocess
 from abc import ABC, abstractmethod
@@ -17,9 +16,12 @@ from tqdm import tqdm
 from math import sqrt, atan2
 import pickle
 
+from hercules.simconfig import SimConfig
+from .fileindex import FileIndex
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME, KASS_CONFIG_NAME, SIM_CONFIG_NAME, 
                         CONFIG)
+
 
 def _gen_shared_dir_string(dir_outside, dir_container):
     # Return string for the docker argument for sharing a directory.
@@ -191,22 +193,9 @@ class AbstractKassLocustP3(ABC):
         
     def make_index(self, config_list):
         
-        index = {}
-        
-        for sim_config in config_list:
-            path = sim_config.sim_name
-            x = sim_config._kass_config._config_dict['x_min']
-            y = sim_config._kass_config._config_dict['y_min']
-            z = sim_config._kass_config._config_dict['z_min']
-            pitch = sim_config._kass_config._config_dict['theta_min']
-            energy = sim_config._kass_config._config_dict['energy']
-            
-            r = sqrt(x**2 + y**2)
-            phi = atan2(y, x)
-            
-            index[energy, pitch, r, phi, z] = path
-            
-        pickle.dump(index, open(self._working_dir/'index.p', "wb"))
+        file_ind = FileIndex(self._working_dir)
+        file_ind.make_index(config_list)
+        file_ind.dump()
     
     @abstractmethod
     def run(self, config_list):
