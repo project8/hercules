@@ -17,7 +17,7 @@ from math import sqrt, atan2
 import pickle
 
 from hercules.simconfig import SimConfig
-from .fileindex import FileIndex
+from .dataset import Dataset
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME, KASS_CONFIG_NAME, SIM_CONFIG_NAME, 
                         CONFIG)
@@ -193,9 +193,9 @@ class AbstractKassLocustP3(ABC):
         
     def make_index(self, config_list):
         
-        file_ind = FileIndex(self._working_dir)
-        file_ind.make_index(config_list)
-        file_ind.dump()
+        dataset = Dataset(self._working_dir)
+        dataset.make_index(config_list)
+        dataset.dump()
     
     @abstractmethod
     def run(self, config_list, **kwargs):

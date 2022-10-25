@@ -2,7 +2,7 @@
 """
 
 Author: F. Thomas
-Date: February 19, 2021
+Date: October 17, 2022
 
 """
 
@@ -24,7 +24,9 @@ class Constant:
     def __call__(self, x):
         return self.x
 
-class FileIndex:
+class Dataset:
+    
+    __version = '1.0'
     
     def __init__(self, directory):
         
@@ -70,6 +72,8 @@ class FileIndex:
         
     def interpolate_all(self):
         
+        print('Making interpolation')
+        
         self.r_int = self.interpolate(self.r)
         self.phi_int = self.interpolate(self.phi)
         self.z_int = self.interpolate(self.z)
@@ -109,11 +113,11 @@ class FileIndex:
         return np.load(self.directory / path / PY_DATA_NAME)
         
     def dump(self):
-        pickle.dump(self, open(self.directory/'index.p', "wb"))
+        pickle.dump(self, open(self.directory/'index.he', "wb"), protocol=4)
         
     @classmethod
     def load(cls, path):
         path_p = Path(path)
-        instance = pickle.load(open(path_p/'index.p', "rb"))
+        instance = pickle.load(open(path_p/'index.he', "rb"))
         instance.directory = path_p
         return instance
