@@ -524,7 +524,8 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
                                  str(self._p8_compute_dir/'setup.sh'))
         kasper_env = _char_concatenate(' ', 'source',
                                  str(self._p8_locust_dir/'bin'/'kasperenv.sh'))
-                                 
+        
+        sim_command = ''
         if self._use_locust:
             sim_command = ('exec LocustSim config='
                       + str(OUTPUT_DIR_CONTAINER/LOCUST_CONFIG_NAME))
