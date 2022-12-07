@@ -91,6 +91,17 @@ class Dataset:
         
     def get_data(self, energy, pitch, r, phi, z, interpolation=True):
         
+        parameters, sim_path = self.get_path(energy, pitch, r, phi, z, interpolation=interpolation)
+        
+        path = sim_path.relative_to(self.directory)
+        
+        return parameters, self.load_sim(path)
+        
+    def load_sim(self, path):
+        return np.load(self.directory / path / PY_DATA_NAME)
+        
+    def get_path(self, energy, pitch, r, phi, z, interpolation=True):
+        
         if interpolation:
             energy_i = self.energy_int(energy).item()
             pitch_i = self.pitch_int(pitch).item()
@@ -107,10 +118,7 @@ class Dataset:
         parameters = (energy_i, pitch_i, r_i, phi_i, z_i)
         sim_path = self.index[parameters]
         
-        return parameters, self.load_sim(sim_path)
-        
-    def load_sim(self, path):
-        return np.load(self.directory / path / PY_DATA_NAME)
+        return parameters, self.directory / sim_path
         
     def dump(self):
         pickle.dump(self, open(self.directory/'index.he', "wb"), protocol=4)
