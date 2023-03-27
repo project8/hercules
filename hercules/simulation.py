@@ -8,7 +8,7 @@ Date: February 19, 2021
 
 __all__ = ['KassLocustP3']
 
-from pathlib import Path, PosixPath
+from pathlib import Path, PurePosixPath
 import subprocess
 from abc import ABC, abstractmethod
 import concurrent.futures as cf
@@ -160,8 +160,8 @@ class AbstractKassLocustP3(ABC):
     """An abstract base class for all KassLocust simulations."""
         
     #configuration parameters
-    _p8_locust_dir = PosixPath(CONFIG.locust_path) / CONFIG.locust_version
-    _p8_compute_dir = PosixPath(CONFIG.p8compute_path) / CONFIG.p8compute_version
+    _p8_locust_dir = PurePosixPath(CONFIG.locust_path) / CONFIG.locust_version
+    _p8_compute_dir = PurePosixPath(CONFIG.p8compute_path) / CONFIG.p8compute_version
         
     def __init__(self, working_dir, use_locust=True, use_kass=False,
                         python_script=None, direct=True):
@@ -248,7 +248,7 @@ class AbstractKassLocustP3(ABC):
 class KassLocustP3Desktop(AbstractKassLocustP3):
     """A class for running KassLocust on a desktop."""
     
-    _working_dir_container = PosixPath('/') / 'workingdir'
+    _working_dir_container = PurePosixPath('/') / 'workingdir'
     _command_script_name = 'locustcommands.sh'
     _container = CONFIG.container
     _max_workers = int(CONFIG.desktop_parallel_jobs)
