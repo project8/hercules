@@ -1176,3 +1176,109 @@ class SimConfig:
         """
         self._locust_config.set_xml(filename_kass)
         self._locust_config.make_config_file(filename_locust)
+
+
+class SimpleSimConfig:
+    """A class for a more general simulation configuration
+    
+    This class is intended for the use with more general python scripts.
+    It supports an arbitrary number of keyword arguments. Arguments with the prefix 'meta_'
+    are treated as meta parameters. Meta parameters are expected to be the same for an entire dataset.
+    All other parameters are considered regular configuration parameters that should vary over a dataset.
+    
+    Attributes
+    ----------
+    sim_name : str
+        Name of the simulation
+    """
+    
+    def __init__(self, sim_name, **kwargs):
+        """
+        Parameters
+        ----------
+        sim_name : str
+            Name of the simulation
+        **kwargs :
+            Arbitrary number of keyword arguments.
+        
+        """
+        
+        self._sim_name = sim_name
+        self._extract_kwargs(kwargs)
+
+    def _extract_kwargs(self, kwargs):
+
+        self._meta_data = {}
+        self._regular_data = {}
+        for e in kwargs:
+            if e.startswith('meta_'):
+                new_key = e.removeprefix('meta_')
+                self._meta_data[new_key] = kwargs[e]
+            else:
+                self._regular_data[e] = kwargs[e]
+    
+    @property
+    def sim_name(self):
+        return self._sim_name
+    
+    def to_json(self, file_name):
+        """Write a json file with the entire simulation configuration."""
+        
+        with open(file_name, 'w') as outfile:
+            json.dump({ 'sim-name': self._sim_name,
+                        'meta-data': self._meta_data, 
+                        'config-data': self._regular_data}, outfile, 
+                        indent=2)#, default=lambda x: x.config_dict)
+ 
+                            
+    def to_dict(self):
+        """Return a dictionary with the entire simulation configuration.
+        
+        Returns
+        -------
+        dict
+            Nested dictionary with the simulation configuration
+        """
+        
+        return {'sim-name': self._sim_name,
+                'meta-data': self._meta_data, 
+                'config-data': self._regular_data}
+            
+    @classmethod
+    def from_json(cls, file_name):
+        """Return a SimpleSimConfig from a json file.
+        
+        Creates a new instance of a SimpleSimConfig from the contents of a json file.
+        This should only be used with a json file that was created by the 
+        `to_json` method. No checks applied for the validity of the json file.
+        
+        Returns
+        -------
+        SimpleSimConfig
+            The new SimpleSimConfig instance
+        """
+        
+        with open(file_name, 'r') as infile:
+            config = json.load(infile)
+            
+            sim_name = config['sim-name']
+            
+            instance = cls(sim_name)
+            
+            instance._meta_data = config['meta-data']
+            instance._regular_data = config['config-data']
+            
+        return instance
+    
+    @classmethod
+    def help(cls):
+        """Print documentation about the SimConfig.
+        
+        Prints the docstrings of the class and the __init__ method as well as
+        additional information about the accepted parameters in the keyword
+        arguments. The latter is provided via the two wrapped configurations.
+        
+        """
+        print(cls.__doc__)
+        print(cls.__init__.__doc__)
+        

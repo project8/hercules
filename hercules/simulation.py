@@ -16,7 +16,7 @@ from tqdm import tqdm
 from math import sqrt, atan2
 import pickle
 
-from hercules.simconfig import SimConfig
+from hercules.simconfig import SimConfig, SimpleSimConfig
 from .dataset import Dataset
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME, KASS_CONFIG_NAME, SIM_CONFIG_NAME, 
@@ -286,7 +286,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
             for future in tqdm(cf.as_completed(futures), total=len(futures)):
                 future.result()
     
-    def _submit(self, sim_config: SimConfig):
+    def _submit(self, sim_config):
         #Submit the job with the given SimConfig
         #Creates all the necessary configuration files, directories and the
         #json output
@@ -573,6 +573,9 @@ class KassLocustP3:
         working_dir : str
             The string for the path to the working directory
         """
+
+        self._use_locust = use_locust
+        self._use_kass = use_kass
         
         self._kass_locust = AbstractKassLocustP3.factory(CONFIG.env, 
                                                           working_dir,
@@ -590,5 +593,13 @@ class KassLocustP3:
         """
         if type(config_list) is not list:
             config_list = [config_list]
+        
+        for config in config_list:
+            if type(config) is not type(config_list[0]):
+                raise TypeError('All configurations in the configuration list have to be of the same type!')
+            
+        if type(config_list[0]) is SimpleSimConfig and (self._use_kass or self._use_locust):
+            raise TypeError('SimpleSimConfig is not compatible with the use of Locust or Kassiopeia!')
+
         return self._kass_locust(config_list, **kwargs)
     
