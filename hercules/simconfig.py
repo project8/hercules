@@ -1154,8 +1154,18 @@ class SimConfig:
         print()
         print('Note that all keyword arguments are optional and take default values from the config files!')
         
-    def make_config_file(self, filename_locust, filename_kass):
-        """Create the final Kassiopeia and Locust config files.
+    def make_kass_config_file(self, filename_kass):
+        """Create the final Kassiopeia file.
+        
+        Parameters
+        ----------
+        filename_kass : str
+            the path to the output Kassiopeia config file
+        """
+        self._kass_config.make_config_file(filename_kass)
+
+    def make_locust_config_file(self, filename_locust, filename_kass):
+        """Create the final Locust config file.
         
         Parameters
         ----------
@@ -1164,7 +1174,5 @@ class SimConfig:
         filename_kass : str
             the path to the output Kassiopeia config file
         """
-        
         self._locust_config.set_xml(filename_kass)
         self._locust_config.make_config_file(filename_locust)
-        self._kass_config.make_config_file(filename_kass)

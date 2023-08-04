@@ -298,8 +298,13 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         kass_file = output_dir / KASS_CONFIG_NAME
         config_dump = output_dir / SIM_CONFIG_NAME
 
-        sim_config.make_config_file(locust_file, kass_file)
         sim_config.to_json(config_dump)
+
+        if self._use_locust:
+            sim_config.make_locust_config_file(locust_file, kass_file)
+
+        if self._use_kass:
+            sim_config.make_kass_config_file(kass_file)
         
         if self._use_locust or self._use_kass:
             self._gen_command_script(output_dir)
@@ -460,8 +465,16 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         kass_file = output_dir / KASS_CONFIG_NAME
         config_dump = output_dir / SIM_CONFIG_NAME
 
-        sim_config.make_config_file(locust_file, kass_file)
         sim_config.to_json(config_dump)
+
+        if self._use_locust:
+            sim_config.make_locust_config_file(locust_file, kass_file)
+
+        if self._use_kass:
+            sim_config.make_kass_config_file(kass_file)
+        
+        if self._use_locust or self._use_kass:
+            self._gen_locust_script(output_dir)
         
         self._gen_locust_script(output_dir)
         cmd = self._assemble_command(output_dir)
