@@ -598,6 +598,12 @@ class KassLocustP3:
             if type(config) is not type(config_list[0]):
                 raise TypeError('All configurations in the configuration list have to be of the same type!')
             
+            if config.get_meta_data() != config_list[0].get_meta_data():
+                raise RuntimeError('All configurations in the configuration list need the same metadata')
+            
+            if config.get_config_data().keys() != config_list[0].get_config_data().keys():
+                raise RuntimeError('All configurations in the configuration list need the same configuration data keys')
+            
         if type(config_list[0]) is SimpleSimConfig and (self._use_kass or self._use_locust):
             raise TypeError('SimpleSimConfig is not compatible with the use of Locust or Kassiopeia!')
 
