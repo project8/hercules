@@ -121,11 +121,18 @@ class Dataset:
         return parameters, self.directory / sim_path
         
     def dump(self):
-        pickle.dump(self, open(self.directory/'index.he', "wb"), protocol=4)
+        with open(self.directory/'index.he', "wb") as f:
+            pickle.dump(self, f, protocol=4)
         
     @classmethod
     def load(cls, path):
         path_p = Path(path)
-        instance = pickle.load(open(path_p/'index.he', "rb"))
+
+        with open(path_p/'index.he', "rb") as f:
+            instance = pickle.load(f)
+
+        if type(instance) is not cls:
+            raise TypeError('Path does not point to a hercules dataset')
+
         instance.directory = path_p
         return instance
