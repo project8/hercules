@@ -26,11 +26,12 @@ class Constant:
 
 class Dataset:
     
-    __version = '1.0'
+    _class_version = '2.0'
     
     def __init__(self, directory):
         
         self.directory = Path(directory)
+        self._version = self._class_version
         
     def make_index(self, config_list):
         
@@ -133,6 +134,14 @@ class Dataset:
 
         if type(instance) is not cls:
             raise TypeError('Path does not point to a hercules dataset')
+        
+        if '_version' not in dir(instance):
+            instance_version = '1.0'
+        else:
+            instance_version = instance._version
+        
+        if instance_version != cls._class_version:
+            raise RuntimeError(f'Tried to load a version {instance_version} hercules dataset with version {cls._class_version}! To open this file you need an older hercules release')
 
         instance.directory = path_p
         return instance
