@@ -982,7 +982,7 @@ class SimConfig:
         Name of the simulation
     """
     
-    def __init__(self, sim_name, phase = 'Phase3', kass_file_name = None, 
+    def __init__(self, phase = 'Phase3', kass_file_name = None, 
                     kass_unknown_args_translation = {},
                     locust_file_name = None,
                     locust_unknown_args_translation = {}, **kwargs):
@@ -1035,7 +1035,7 @@ class SimConfig:
             If phase is not 'Phase2' or 'Phase3'.
         """
         
-        self._sim_name = sim_name
+        self._sim_name = None
         self._phase = phase
         self._extra_meta_data = {}
         
@@ -1083,6 +1083,10 @@ class SimConfig:
     @property
     def sim_name(self):
         return self._sim_name
+    
+    @sim_name.setter
+    def sim_name(self, sim_name):
+        self._sim_name = sim_name
     
     def to_json(self, file_name):
         """Write a json file with the entire simulation configuration."""
@@ -1251,7 +1255,7 @@ class SimpleSimConfig:
         Name of the simulation
     """
     
-    def __init__(self, sim_name, **kwargs):
+    def __init__(self, **kwargs):
         """
         Parameters
         ----------
@@ -1262,7 +1266,7 @@ class SimpleSimConfig:
         
         """
         
-        self._sim_name = sim_name
+        self._sim_name = None
         self._extract_kwargs(kwargs)
 
     def _extract_kwargs(self, kwargs):
@@ -1280,6 +1284,10 @@ class SimpleSimConfig:
     @property
     def sim_name(self):
         return self._sim_name
+    
+    @sim_name.setter
+    def sim_name(self, sim_name):
+        self._sim_name = sim_name
     
     def to_json(self, file_name):
         """Write a json file with the entire simulation configuration."""
@@ -1363,7 +1371,9 @@ class ConfigList:
 
     def add_config(self, config):
 
-        if len(self._config_list) == 0:
+        n = len(self._config_list)
+
+        if n == 0:
 
             common_keys = set(self._meta_data.keys()).intersection(config.get_meta_data().keys())
 
@@ -1385,6 +1395,7 @@ class ConfigList:
             raise RuntimeError('All configurations in the configuration list need the same configuration data keys')
 
         config.add_meta_data(self._meta_data)
+        config.sim_name = f'run{n}'
         self._config_list.append(config)
 
     def get_internal_list(self):
@@ -1393,4 +1404,6 @@ class ConfigList:
     def get_list_type(self):
         return self._config_list_type
 
+    def get_meta_data(self):
+        return self._meta_data
 
