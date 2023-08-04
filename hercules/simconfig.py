@@ -11,9 +11,8 @@ __all__ = ['SimConfig']
 import time
 import json
 import re
-from pathlib import Path, PosixPath
-from abc import ABC, abstractmethod
 from copy import deepcopy
+from math import sqrt, atan2
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME_P2, KASS_CONFIG_NAME_P2,
@@ -1177,6 +1176,60 @@ class SimConfig:
         self._locust_config.set_xml(filename_kass)
         self._locust_config.make_config_file(filename_locust)
 
+    def get_meta_data(self):
+        
+        #maybe incomplete
+        #add more when you realize you need more metadata
+        meta_data = {'trap': self._kass_config['geometry'],
+                     'transfer-function': self._locust_config[LocustConfig._array_signal_key][LocustConfig._tf_receiver_filename_key],
+                     'n-channels': self._locust_config[LocustConfig._sim_key][LocustConfig._n_channels_key],
+                     'acquisition-rate': self._locust_config[LocustConfig._sim_key][LocustConfig._acq_rate_key],
+                     'lo-frequency': self._locust_config[LocustConfig._array_signal_key][LocustConfig._lo_frequency_key],
+                     }
+        
+        return meta_data
+    
+    def get_config_data(self):
+        
+        config_data = {}
+
+        x_min = self._kass_config._config_dict['x_min']
+        y_min = self._kass_config._config_dict['y_min']
+        z_min = self._kass_config._config_dict['z_min']
+        pitch_min = self._kass_config._config_dict['theta_min']
+
+        x_max = self._kass_config._config_dict['x_max']
+        y_max = self._kass_config._config_dict['y_max']
+        z_max = self._kass_config._config_dict['z_max']
+        pitch_max = self._kass_config._config_dict['theta_max']
+
+        energy = self._kass_config._config_dict['energy']
+        
+        r_min = sqrt(x_min**2 + y_min**2)
+        phi_min = atan2(y_min, x_min)
+
+        r_max = sqrt(x_max**2 + y_max**2)
+        phi_max = atan2(y_max, x_max)
+
+        if x_min==x_max and y_min==y_max and z_min==z_max and pitch_min==pitch_max:
+            config_data['r'] = r_min
+            config_data['phi'] = phi_min
+            config_data['z'] = z_min
+            config_data['pitch'] = pitch_min
+        else:
+            config_data['r_min'] = r_min
+            config_data['phi_min'] = phi_min
+            config_data['z_min'] = z_min
+            config_data['pitch_min'] = pitch_min
+            config_data['r_max'] = r_max
+            config_data['phi_max'] = phi_max
+            config_data['z_max'] = z_max
+            config_data['pitch_max'] = pitch_max
+
+        config_data['energy'] = energy
+
+        return config_data
+
 
 class SimpleSimConfig:
     """A class for a more general simulation configuration
@@ -1209,13 +1262,13 @@ class SimpleSimConfig:
     def _extract_kwargs(self, kwargs):
 
         self._meta_data = {}
-        self._regular_data = {}
+        self._config_data = {}
         for e in kwargs:
             if e.startswith('meta_'):
                 new_key = e.removeprefix('meta_')
                 self._meta_data[new_key] = kwargs[e]
             else:
-                self._regular_data[e] = kwargs[e]
+                self._config_data[e] = kwargs[e]
     
     @property
     def sim_name(self):
@@ -1227,7 +1280,7 @@ class SimpleSimConfig:
         with open(file_name, 'w') as outfile:
             json.dump({ 'sim-name': self._sim_name,
                         'meta-data': self._meta_data, 
-                        'config-data': self._regular_data}, outfile, 
+                        'config-data': self._config_data}, outfile, 
                         indent=2)#, default=lambda x: x.config_dict)
  
                             
@@ -1242,7 +1295,7 @@ class SimpleSimConfig:
         
         return {'sim-name': self._sim_name,
                 'meta-data': self._meta_data, 
-                'config-data': self._regular_data}
+                'config-data': self._config_data}
             
     @classmethod
     def from_json(cls, file_name):
@@ -1266,7 +1319,7 @@ class SimpleSimConfig:
             instance = cls(sim_name)
             
             instance._meta_data = config['meta-data']
-            instance._regular_data = config['config-data']
+            instance._config_data = config['config-data']
             
         return instance
     
@@ -1281,4 +1334,10 @@ class SimpleSimConfig:
         """
         print(cls.__doc__)
         print(cls.__init__.__doc__)
+
+    def get_meta_data(self):
+        return self._meta_data
+    
+    def get_config_data(self):
+        return self._config_data
         
