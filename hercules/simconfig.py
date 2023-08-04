@@ -1037,6 +1037,7 @@ class SimConfig:
         
         self._sim_name = sim_name
         self._phase = phase
+        self._extra_meta_data = {}
         
         self._locust_config = LocustConfig(phase = phase, 
                                            locust_file_name = locust_file_name,
@@ -1187,7 +1188,12 @@ class SimConfig:
                      'lo-frequency': self._locust_config[LocustConfig._array_signal_key][LocustConfig._lo_frequency_key],
                      }
         
+        meta_data.update(self._extra_meta_data)
+        
         return meta_data
+    
+    def add_meta_data(self, meta_data):
+        self._extra_meta_data = meta_data
     
     def get_config_data(self):
         
@@ -1263,12 +1269,13 @@ class SimpleSimConfig:
 
         self._meta_data = {}
         self._config_data = {}
-        for e in kwargs:
-            if e.startswith('meta_'):
-                new_key = e.removeprefix('meta_')
-                self._meta_data[new_key] = kwargs[e]
-            else:
-                self._config_data[e] = kwargs[e]
+        #for e in kwargs:
+        #    if e.startswith('meta_'):
+        #        new_key = e.removeprefix('meta_')
+        #        self._meta_data[new_key] = kwargs[e]
+        #    else:
+        #        self._config_data[e] = kwargs[e]
+        self._config_data = kwargs
     
     @property
     def sim_name(self):
@@ -1340,4 +1347,50 @@ class SimpleSimConfig:
     
     def get_config_data(self):
         return self._config_data
+    
+    def add_meta_data(self, meta_data):
+        self._meta_data = meta_data
+
+
+class ConfigList:
+
+    def __init__(self, **kwargs):
+        self._config_list = []
+        self._meta_data = kwargs
+        self._extra_meta_data = None
+        self._config_list_type = None
+        self._config_data_keys = None
+
+    def add_config(self, config):
+
+        if len(self._config_list) == 0:
+
+            common_keys = set(self._meta_data.keys()).intersection(config.get_meta_data().keys())
+
+            if len(common_keys)>0:
+                print('Warning, adding a config with metadata that overwrites an existing metadata entry! This might not be what you want.')
+
+            self._extra_meta_data = config.get_meta_data()
+            self._meta_data.update(config.get_meta_data())
+            self._config_list_type = type(config)
+            self._config_data_keys = config.get_config_data().keys()
+
+        if type(config) is not self._config_list_type:
+            raise TypeError('All configurations in the configuration list have to be of the same type!')
         
+        if config.get_meta_data() != self._extra_meta_data:
+            raise RuntimeError('All configurations in the configuration list need the same metadata')
+        
+        if config.get_config_data().keys() != self._config_data_keys:
+            raise RuntimeError('All configurations in the configuration list need the same configuration data keys')
+
+        config.add_meta_data(self._meta_data)
+        self._config_list.append(config)
+
+    def get_config_list(self):
+        return self._config_list
+    
+    def get_list_type(self):
+        return self._config_list_type
+
+

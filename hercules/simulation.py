@@ -16,7 +16,7 @@ from tqdm import tqdm
 from math import sqrt, atan2
 import pickle
 
-from hercules.simconfig import SimConfig, SimpleSimConfig
+from hercules.simconfig import ConfigList, SimpleSimConfig
 from .dataset import Dataset
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME, KASS_CONFIG_NAME, SIM_CONFIG_NAME, 
@@ -591,21 +591,11 @@ class KassLocustP3:
         config_list : list or SimConfig
             Either a single SimConfig object or a list
         """
-        if type(config_list) is not list:
-            config_list = [config_list]
-        
-        for config in config_list:
-            if type(config) is not type(config_list[0]):
-                raise TypeError('All configurations in the configuration list have to be of the same type!')
+        if type(config_list) is not ConfigList:
+            raise TypeError('Needs an instance of ConfigList')
             
-            if config.get_meta_data() != config_list[0].get_meta_data():
-                raise RuntimeError('All configurations in the configuration list need the same metadata')
-            
-            if config.get_config_data().keys() != config_list[0].get_config_data().keys():
-                raise RuntimeError('All configurations in the configuration list need the same configuration data keys')
-            
-        if type(config_list[0]) is SimpleSimConfig and (self._use_kass or self._use_locust):
+        if config_list.get_list_type() is SimpleSimConfig and (self._use_kass or self._use_locust):
             raise TypeError('SimpleSimConfig is not compatible with the use of Locust or Kassiopeia!')
 
-        return self._kass_locust(config_list, **kwargs)
+        return self._kass_locust(config_list.get_config_list(), **kwargs)
     
