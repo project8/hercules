@@ -1387,7 +1387,7 @@ class ConfigList:
         config.add_meta_data(self._meta_data)
         self._config_list.append(config)
 
-    def get_config_list(self):
+    def get_internal_list(self):
         return self._config_list
     
     def get_list_type(self):

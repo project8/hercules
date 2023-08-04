@@ -184,12 +184,12 @@ class AbstractKassLocustP3(ABC):
         
         Parameters
         ----------
-        config_list : list
-            A list of SimConfig objects
+        config_list : ConfigList
+            A ConfigList object
         """
         
         self.make_index(config_list)
-        self.run(config_list, **kwargs)
+        self.run(config_list.get_internal_list(), **kwargs)
         
     def make_index(self, config_list):
         
@@ -597,5 +597,5 @@ class KassLocustP3:
         if config_list.get_list_type() is SimpleSimConfig and (self._use_kass or self._use_locust):
             raise TypeError('SimpleSimConfig is not compatible with the use of Locust or Kassiopeia!')
 
-        return self._kass_locust(config_list.get_config_list(), **kwargs)
+        return self._kass_locust(config_list, **kwargs)
     
