@@ -430,6 +430,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         module = 'module load dSQ;'
         
         n_cpus = 2 if self._use_locust else 1
+        n_cpus = n_cpus if 'n_cpus' not in kwargs else kwargs['n_cpus']
         memory = CONFIG.job_memory if 'memory' not in kwargs else kwargs['memory']
         timelimit = CONFIG.job_timelimit if 'timelimit' not in kwargs else kwargs['timelimit']
         
