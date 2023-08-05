@@ -65,7 +65,7 @@ class Dataset:
         for k in self._axes_dict:
             self._axes_dict[k] = np.sort(np.unique(self._axes_dict[k]))
         
-        self.interpolate_all()
+        self._interpolate_all()
         
     def _interpolate_all(self):
         
@@ -74,7 +74,7 @@ class Dataset:
         self._axes_dict_int = {}
 
         for k in self._axes_dict:
-            self._axes_dict_int[k] = self.interpolate(self._axes_dict[k])    
+            self._axes_dict_int[k] = self._interpolate(self._axes_dict[k])    
         
     def _interpolate(self, x):
         
