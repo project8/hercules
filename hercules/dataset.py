@@ -116,6 +116,18 @@ class Dataset:
             raise KeyError(f'{parameters} is not part of the dataset!')
         
         return parameters, self.directory / sim_path
+    
+    @property
+    def config_data_keys(self):
+        return self._config_data_keys
+    
+    @property
+    def axes_dict(self):
+        return self._axes_dict
+    
+    @property
+    def shape(self):
+        return tuple(len(self._axes_dict[k] for k in self._axes_dict))
         
     def dump(self):
         with open(self.directory/'index.he', "wb") as f:
