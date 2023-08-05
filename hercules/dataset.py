@@ -30,8 +30,8 @@ class Dataset:
     
     def __init__(self, directory, config_list):
         
-        self.directory = Path(directory)
-        self.directory.mkdir(parents=True, exist_ok=True)
+        self._directory = Path(directory)
+        self._directory.mkdir(parents=True, exist_ok=True)
         self._version = self._class_version
         self._make_index(config_list)
         
@@ -67,7 +67,7 @@ class Dataset:
         
         self.interpolate_all()
         
-    def interpolate_all(self):
+    def _interpolate_all(self):
         
         print('Making interpolation')
 
@@ -76,7 +76,7 @@ class Dataset:
         for k in self._axes_dict:
             self._axes_dict_int[k] = self.interpolate(self._axes_dict[k])    
         
-    def interpolate(self, x):
+    def _interpolate(self, x):
         
         if len(x)>1:
             x_int = interp1d(x, x, kind='nearest', bounds_error=None, fill_value='extrapolate')
@@ -89,12 +89,12 @@ class Dataset:
         
         parameters, sim_path = self.get_path(params, interpolation=interpolation)
         
-        path = sim_path.relative_to(self.directory)
+        path = sim_path.relative_to(self._directory)
         
         return parameters, self.load_sim(path)
         
     def load_sim(self, path):
-        return np.load(self.directory / path / PY_DATA_NAME)
+        return np.load(self._directory / path / PY_DATA_NAME)
         
     def get_path(self, params, method='interpolated'):
 
@@ -117,7 +117,7 @@ class Dataset:
         if sim_path is None:
             raise KeyError(f'{parameters} is not part of the dataset!')
         
-        return parameters, self.directory / sim_path
+        return parameters, self._directory / sim_path
     
     def __iter__(self):
         self._it_index = tuple(0 for i in range(len(self.shape)))
@@ -164,10 +164,10 @@ class Dataset:
         return self._meta_data
         
     def dump(self):
-        with open(self.directory/'index.he', "wb") as f:
+        with open(self._directory/'index.he', "wb") as f:
             pickle.dump(self, f, protocol=4)
 
-        with open(self.directory/'info.txt', "w") as f:
+        with open(self._directory/'info.txt', "w") as f:
             f.write(f'Hercules dataset version {self._version}\n')
             f.write('Metadata:\n')
             f.write(str(self._meta_data))
@@ -198,5 +198,5 @@ class Dataset:
         if instance_version != cls._class_version:
             raise RuntimeError(f'Tried to load a version {instance_version} hercules dataset with version {cls._class_version}! To open this file you need an older hercules release')
 
-        instance.directory = path_p
+        instance._directory = path_p
         return instance
