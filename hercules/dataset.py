@@ -48,22 +48,23 @@ class Dataset:
         
         self._index = {}
         self._meta_data = config_list.get_meta_data()
-        self._config_data_keys = config_list.get_config_data_keys()
+        self._config_data_keys = list(config_list.get_config_data_keys()) # maps a list index to a key
         config_list_internal = config_list.get_internal_list()
 
-        self._axes_dict = {k: np.empty(len(config_list_internal)) for k in self._config_data_keys}
+        self._axes = [np.empty(len(config_list_internal)) for k in self._config_data_keys]
         
         for i, sim_config in enumerate(config_list_internal):
             path = sim_config.sim_name
             config_data = sim_config.get_config_data()
 
             for k in config_data:
-                self._axes_dict[k][i] = config_data[k]
+                k_ind = self._config_data_keys.index(k)
+                self._axes[k_ind][i] = config_data[k]
             
             self._index[tuple(config_data.values())] = path
 
-        for k in self._axes_dict:
-            self._axes_dict[k] = np.sort(np.unique(self._axes_dict[k]))
+        for i in range(len(self._axes)):
+            self._axes[i] = np.sort(np.unique(self._axes[i]))
         
         self._interpolate_all()
         
@@ -71,10 +72,10 @@ class Dataset:
         
         print('Making interpolation')
 
-        self._axes_dict_int = {}
+        self._axes_int = []
 
-        for k in self._axes_dict:
-            self._axes_dict_int[k] = self._interpolate(self._axes_dict[k])    
+        for ax in self._axes:
+            self._axes_int.append(self._interpolate(ax))
         
     def _interpolate(self, x):
         
@@ -98,13 +99,13 @@ class Dataset:
         
     def get_path(self, params, method='interpolated'):
 
-        if len(params) != len(self._axes_dict):
-            raise ValueError(f'params has len {len(params)} but dataset expects len {len(self._axes_dict)}!')
+        if len(params) != len(self._axes):
+            raise ValueError(f'params has len {len(params)} but dataset expects len {len(self._axes)}!')
 
         if method == 'interpolated':
-            key = [self._axes_dict_int[i](params[i]).item() for i in range(len(params))]
+            key = [self._axes_int[i](params[i]).item() for i in range(len(params))]
         elif method == 'index':
-            key = [self._axes_dict[i][params[i]] for i in range(len(params))]
+            key = [self._axes[i][params[i]] for i in range(len(params))]
         elif method == 'exact':
             key = params
         else:
@@ -152,12 +153,12 @@ class Dataset:
         return self._config_data_keys
     
     @property
-    def axes_dict(self):
-        return self._axes_dict
+    def axes(self):
+        return self._axes
     
     @property
     def shape(self):
-        return tuple(len(self._axes_dict[k]) for k in self._axes_dict)
+        return tuple(len(ax) for ax in self._axes)
     
     @property
     def meta_data(self):
@@ -174,11 +175,12 @@ class Dataset:
             f.write('\n\n')
             f.write('Dataset has following configurations:\n')
 
-            for k in self._axes_dict:
-                n = len(self._axes_dict[k])
-                lower = self._axes_dict[k][0]
-                upper = self._axes_dict[k][-1]
-                f.write(f'{k}: {n} values in [{lower},{upper}] \n')
+            for i, ax in enumerate(self._axes):
+                n = len(ax)
+                lower = ax[0]
+                upper = ax[-1]
+                ax_name = self._config_data_keys[i]
+                f.write(f'{ax_name}: {n} values in [{lower},{upper}] \n')
         
     @classmethod
     def load(cls, path):
