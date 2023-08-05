@@ -34,52 +34,45 @@ class Dataset:
         self._version = self._class_version
         
     def make_index(self, config_list):
+        """Create the index dictionary.
+        
+        Parameters
+        ----------
+        config_list : ConfigList
+            A ConfigList object
+        """
         
         print('Making file index')
         
-        self.index = {}
-        r_np = np.empty(len(config_list))
-        phi_np = np.empty(len(config_list))
-        z_np = np.empty(len(config_list))
-        pitch_np = np.empty(len(config_list))
-        energy_np = np.empty(len(config_list))
+        self._index = {}
+        self._meta_data = config_list.get_meta_data()
+        self._config_data_keys = config_list.get_config_data_keys()
+        config_list_internal = config_list.get_internal_list()
+
+        self._axes_dict = {k: np.empty(len(config_list_internal)) for k in self._config_data_keys}
         
-        for i, sim_config in enumerate(config_list):
+        for i, sim_config in enumerate(config_list_internal):
             path = sim_config.sim_name
-            x = sim_config._kass_config._config_dict['x_min']
-            y = sim_config._kass_config._config_dict['y_min']
-            z = sim_config._kass_config._config_dict['z_min']
-            pitch = sim_config._kass_config._config_dict['theta_min']
-            energy = sim_config._kass_config._config_dict['energy']
+            config_data = sim_config.get_config_data()
+
+            for k in config_data:
+                self._axes_dict[k][i] = config_data[k]
             
-            r = sqrt(x**2 + y**2)
-            phi = atan2(y, x)
-            
-            self.index[energy, pitch, r, phi, z] = path
-            
-            r_np[i] = r
-            phi_np[i] = phi
-            z_np[i] = z
-            pitch_np[i] = pitch
-            energy_np[i] = energy
-            
-        self.r = np.sort(np.unique(r_np))
-        self.phi = np.sort(np.unique(phi_np))
-        self.z = np.sort(np.unique(z_np))
-        self.pitch = np.sort(np.unique(pitch_np))
-        self.energy = np.sort(np.unique(energy_np))
+            self._index[tuple(config_data.values())] = path
+
+        for k in self._axes_dict:
+            self._axes_dict[k] = np.sort(np.unique(self._axes_dict[k]))
         
         self.interpolate_all()
         
     def interpolate_all(self):
         
         print('Making interpolation')
-        
-        self.r_int = self.interpolate(self.r)
-        self.phi_int = self.interpolate(self.phi)
-        self.z_int = self.interpolate(self.z)
-        self.pitch_int = self.interpolate(self.pitch)
-        self.energy_int = self.interpolate(self.energy)      
+
+        self._axes_dict_int = {}
+
+        for k in self._axes_dict:
+            self._axes_dict_int[k] = self.interpolate(self._axes_dict[k])    
         
     def interpolate(self, x):
         
@@ -90,9 +83,9 @@ class Dataset:
             
         return x_int
         
-    def get_data(self, energy, pitch, r, phi, z, interpolation=True):
+    def get_data(self, params, interpolation=True):
         
-        parameters, sim_path = self.get_path(energy, pitch, r, phi, z, interpolation=interpolation)
+        parameters, sim_path = self.get_path(params, interpolation=interpolation)
         
         path = sim_path.relative_to(self.directory)
         
@@ -101,29 +94,35 @@ class Dataset:
     def load_sim(self, path):
         return np.load(self.directory / path / PY_DATA_NAME)
         
-    def get_path(self, energy, pitch, r, phi, z, interpolation=True):
+    def get_path(self, params, interpolation=True):
         
         if interpolation:
-            energy_i = self.energy_int(energy).item()
-            pitch_i = self.pitch_int(pitch).item()
-            r_i = self.r_int(r).item()
-            phi_i = self.phi_int(phi).item()
-            z_i = self.z_int(z).item()
+            key = [self._axes_dict_int[i](params[i]).item() for i in range(len(params))]
         else:
-            energy_i = energy
-            pitch_i = pitch
-            r_i = r
-            phi_i = phi
-            z_i = z
-            
-        parameters = (energy_i, pitch_i, r_i, phi_i, z_i)
-        sim_path = self.index[parameters]
+            key = [self._axes_dict[i] for i in range(len(params))]
+
+        parameters = tuple(key)
+
+        sim_path = self._index[parameters]
         
         return parameters, self.directory / sim_path
         
     def dump(self):
         with open(self.directory/'index.he', "wb") as f:
             pickle.dump(self, f, protocol=4)
+
+        with open(self.directory/'info.txt', "w") as f:
+            f.write(f'Hercules dataset version {self._version}\n')
+            f.write('Metadata:\n')
+            f.write(str(self._meta_data))
+            f.write('\n\n')
+            f.write('Dataset has following configurations:\n')
+
+            for k in self._axes_dict:
+                n = len(self._axes_dict[k])
+                lower = self._axes_dict[k][0]
+                upper = self._axes_dict[k][-1]
+                f.write(f'{k}: {n} values in [{lower},{upper}] \n')
         
     @classmethod
     def load(cls, path):
@@ -133,7 +132,7 @@ class Dataset:
             instance = pickle.load(f)
 
         if type(instance) is not cls:
-            raise TypeError('Path does not point to a hercules dataset')
+            raise RuntimeError('Path does not point to a hercules dataset')
         
         if '_version' not in dir(instance):
             instance_version = '1.0'

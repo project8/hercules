@@ -1406,4 +1406,7 @@ class ConfigList:
 
     def get_meta_data(self):
         return self._meta_data
+    
+    def get_config_data_keys(self):
+        return self._config_data_keys
 
