@@ -1130,10 +1130,10 @@ class SimConfig:
         with open(file_name, 'r') as infile:
             config = json.load(infile)
             
-            sim_name = config['sim-name']
             phase = config['phase']
             
-            instance = cls(sim_name, phase=phase)
+            instance = cls(phase=phase)
+            instance.sim_name = config['sim-name']
             
             instance._locust_config._config_dict = config['locust-config']
             instance._kass_config._config_dict = config['kass-config']
@@ -1185,12 +1185,25 @@ class SimConfig:
         
         #maybe incomplete
         #add more when you realize you need more metadata
-        meta_data = {'trap': self._kass_config['geometry'],
-                     'transfer-function': self._locust_config[LocustConfig._array_signal_key][LocustConfig._tf_receiver_filename_key],
-                     'n-channels': self._locust_config[LocustConfig._sim_key][LocustConfig._n_channels_key],
-                     'acquisition-rate': self._locust_config[LocustConfig._sim_key][LocustConfig._acq_rate_key],
-                     'lo-frequency': self._locust_config[LocustConfig._array_signal_key][LocustConfig._lo_frequency_key],
-                     }
+
+        tf_file_name = self._locust_config._config_dict[LocustConfig._array_signal_key].get(LocustConfig._tf_receiver_filename_key)
+        n_channels = self._locust_config._config_dict[LocustConfig._sim_key].get(LocustConfig._n_channels_key)
+        acq_rate = self._locust_config._config_dict[LocustConfig._sim_key].get(LocustConfig._acq_rate_key)
+        lo_f = self._locust_config._config_dict[LocustConfig._array_signal_key].get(LocustConfig._lo_frequency_key)
+
+        meta_data = {'trap': self._kass_config._config_dict['geometry']}
+
+        if tf_file_name is not None:
+            meta_data.update({'transfer-function': tf_file_name})
+
+        if n_channels is not None:
+            meta_data.update({'n-channels': n_channels})
+
+        if acq_rate is not None:
+            meta_data.update({'acquisition-rate': acq_rate})
+
+        if lo_f is not None:
+            meta_data.update({'lo-frequency': lo_f})
         
         meta_data.update(self._extra_meta_data)
         
@@ -1329,10 +1342,8 @@ class SimpleSimConfig:
         with open(file_name, 'r') as infile:
             config = json.load(infile)
             
-            sim_name = config['sim-name']
-            
-            instance = cls(sim_name)
-            
+            instance = cls()
+            instance.sim_name = config['sim-name']            
             instance._meta_data = config['meta-data']
             instance._config_data = config['config-data']
             
