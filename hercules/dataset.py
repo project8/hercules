@@ -158,6 +158,10 @@ class Dataset:
     @property
     def shape(self):
         return tuple(len(self._axes_dict[k] for k in self._axes_dict))
+    
+    @property
+    def meta_data(self):
+        return self._meta_data
         
     def dump(self):
         with open(self.directory/'index.he', "wb") as f:
