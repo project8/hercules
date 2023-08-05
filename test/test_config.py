@@ -6,7 +6,8 @@ Date: Apr. 12, 2021
 """
 
 from pathlib import Path
-FILE_DIR = Path(__file__).parent.absolute()
+
+module_dir = Path(__file__).parent.absolute()
 
 import unittest
 from hercules import SimConfig, SimpleSimConfig, ConfigList
@@ -39,9 +40,9 @@ class SimConfigTest(unittest.TestCase):
                     v_range=3.0e-7,
                     geometry='FreeSpaceGeometry_V00_00_10.xml')
         
-        self.file_name_locust = Path('locust.json')
-        self.file_name_kass = Path('kass.xml') 
-        self.file_name_json = Path('test.json')
+        self.file_name_locust = module_dir / 'locust.json'
+        self.file_name_kass = module_dir / 'kass.xml' 
+        self.file_name_json = module_dir / 'test.json'
 
     def tearDown(self) -> None:
         
