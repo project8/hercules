@@ -52,9 +52,9 @@ class DatasetTest(unittest.TestCase):
 
     def test_get_path(self) -> None:
 
-        expected_result_1 = ((9.0, 3.0, 6.0), Path('test_directory/run19').absolute())
-        expected_result_2 = ((1.0, 3.0, 5.0), Path('test_directory/run2').absolute())
-        expected_result_3 = ((4.0, 3.0, 6.0), Path('test_directory/run9').absolute())
+        expected_result_1 = ((9.0, 3.0, 6.0), (test_path / 'run19').absolute())
+        expected_result_2 = ((1.0, 3.0, 5.0), (test_path /'run2').absolute())
+        expected_result_3 = ((4.0, 3.0, 6.0), (test_path / 'run9').absolute())
 
         self.assertTrue(expected_result_1==self.d.get_path([100, 100, 100], method='interpolated'))
         self.assertTrue(expected_result_2==self.d.get_path([1., 3., 5.], method='exact'))
@@ -65,26 +65,26 @@ class DatasetTest(unittest.TestCase):
 
     def test_iterator(self) -> None:
 
-        expected_result = [((0.0, 3.0, 5.0), Path('test_directory/run0').absolute()),
-                            ((0.0, 3.0, 6.0), Path('test_directory/run1').absolute()),
-                            ((1.0, 3.0, 5.0), Path('test_directory/run2').absolute()),
-                            ((1.0, 3.0, 6.0), Path('test_directory/run3').absolute()),
-                            ((2.0, 3.0, 5.0), Path('test_directory/run4').absolute()),
-                            ((2.0, 3.0, 6.0), Path('test_directory/run5').absolute()),
-                            ((3.0, 3.0, 5.0), Path('test_directory/run6').absolute()),
-                            ((3.0, 3.0, 6.0), Path('test_directory/run7').absolute()),
-                            ((4.0, 3.0, 5.0), Path('test_directory/run8').absolute()),
-                            ((4.0, 3.0, 6.0), Path('test_directory/run9').absolute()),
-                            ((5.0, 3.0, 5.0), Path('test_directory/run10').absolute()),
-                            ((5.0, 3.0, 6.0), Path('test_directory/run11').absolute()),
-                            ((6.0, 3.0, 5.0), Path('test_directory/run12').absolute()),
-                            ((6.0, 3.0, 6.0), Path('test_directory/run13').absolute()),
-                            ((7.0, 3.0, 5.0), Path('test_directory/run14').absolute()),
-                            ((7.0, 3.0, 6.0), Path('test_directory/run15').absolute()),
-                            ((8.0, 3.0, 5.0), Path('test_directory/run16').absolute()),
-                            ((8.0, 3.0, 6.0), Path('test_directory/run17').absolute()),
-                            ((9.0, 3.0, 5.0), Path('test_directory/run18').absolute()),
-                            ((9.0, 3.0, 6.0), Path('test_directory/run19').absolute())]
+        expected_result = [((0.0, 3.0, 5.0), (test_path / 'run0').absolute()),
+                            ((0.0, 3.0, 6.0), (test_path / 'run1').absolute()),
+                            ((1.0, 3.0, 5.0), (test_path / 'run2').absolute()),
+                            ((1.0, 3.0, 6.0), (test_path / 'run3').absolute()),
+                            ((2.0, 3.0, 5.0), (test_path / 'run4').absolute()),
+                            ((2.0, 3.0, 6.0), (test_path / 'run5').absolute()),
+                            ((3.0, 3.0, 5.0), (test_path / 'run6').absolute()),
+                            ((3.0, 3.0, 6.0), (test_path / 'run7').absolute()),
+                            ((4.0, 3.0, 5.0), (test_path / 'run8').absolute()),
+                            ((4.0, 3.0, 6.0), (test_path / 'run9').absolute()),
+                            ((5.0, 3.0, 5.0), (test_path / 'run10').absolute()),
+                            ((5.0, 3.0, 6.0), (test_path / 'run11').absolute()),
+                            ((6.0, 3.0, 5.0), (test_path / 'run12').absolute()),
+                            ((6.0, 3.0, 6.0), (test_path / 'run13').absolute()),
+                            ((7.0, 3.0, 5.0), (test_path / 'run14').absolute()),
+                            ((7.0, 3.0, 6.0), (test_path / 'run15').absolute()),
+                            ((8.0, 3.0, 5.0), (test_path / 'run16').absolute()),
+                            ((8.0, 3.0, 6.0), (test_path / 'run17').absolute()),
+                            ((9.0, 3.0, 5.0), (test_path / 'run18').absolute()),
+                            ((9.0, 3.0, 6.0), (test_path / 'run19').absolute())]
         
         result = []
 
