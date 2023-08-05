@@ -98,6 +98,43 @@ class SimConfigTest(unittest.TestCase):
         self.config.add_meta_data(additional_meta_data)
         self.assertTrue(self.config.get_meta_data()==expected)
 
+class SimpleSimConfigTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        
+        self.config = SimpleSimConfig(x=1., y=2., z=3.)
+        self.file_name_json = module_dir / 'test.json'
+
+    def tearDown(self) -> None:
+        
+        if self.file_name_json.exists():
+            self.file_name_json.unlink()
+        
+    def test_meta_data(self):
+        expected = {}
+        
+        self.assertTrue(expected==self.config.get_meta_data())
+
+    def test_config_data(self):
+        expected = {'x': 1., 'y': 2., 'z': 3.}
+
+        self.assertTrue(expected==self.config.get_config_data())
+
+    def test_to_json(self):
+
+        self.config.to_json(self.file_name_json)
+        config_loaded = SimpleSimConfig.from_json(self.file_name_json)
+        self.assertTrue(config_loaded.to_dict()==self.config.to_dict())
+
+    def test_add_metadata(self):
+
+        meta_data = {'info1': 2, 
+                                'info2': 'this is some additional info'}
+
+        self.config.add_meta_data(meta_data)
+        self.assertTrue(self.config.get_meta_data()==meta_data)
+
+
 
 """
 class ConfigListTest(unittest.TestCase):
