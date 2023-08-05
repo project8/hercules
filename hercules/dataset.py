@@ -94,16 +94,26 @@ class Dataset:
     def load_sim(self, path):
         return np.load(self.directory / path / PY_DATA_NAME)
         
-    def get_path(self, params, interpolation=True):
-        
-        if interpolation:
+    def get_path(self, params, method='interpolated'):
+
+        if len(params) != len(self._axes_dict):
+            raise ValueError(f'params has len {len(params)} but dataset expects len {len(self._axes_dict)}!')
+
+        if method == 'interpolated':
             key = [self._axes_dict_int[i](params[i]).item() for i in range(len(params))]
+        elif method == 'index':
+            key = [self._axes_dict[i][params[i]] for i in range(len(params))]
+        elif method == 'exact':
+            key = params
         else:
-            key = [self._axes_dict[i] for i in range(len(params))]
+            raise ValueError("method can only take values 'interpolated', 'index' or 'exact'!")
 
         parameters = tuple(key)
 
-        sim_path = self._index[parameters]
+        sim_path = self._index.get(parameters) # self._index[parameters]
+
+        if sim_path is None:
+            raise KeyError(f'{parameters} is not part of the dataset!')
         
         return parameters, self.directory / sim_path
         
