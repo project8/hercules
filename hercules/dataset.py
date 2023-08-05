@@ -8,7 +8,7 @@ Date: October 17, 2022
 
 import numpy as np
 from scipy.interpolate import interp1d
-import pickle
+import dill as pickle
 from pathlib import Path
 
 from .constants import PY_DATA_NAME
@@ -31,6 +31,7 @@ class Dataset:
     def __init__(self, directory, config_list):
         
         self.directory = Path(directory)
+        self.directory.mkdir(parents=True, exist_ok=True)
         self._version = self._class_version
         self._make_index(config_list)
         
