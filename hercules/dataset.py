@@ -10,7 +10,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 import pickle
 from pathlib import Path
-from math import sqrt, atan2
 
 from .constants import PY_DATA_NAME
 
@@ -24,16 +23,18 @@ class Constant:
     def __call__(self, x):
         return self.x
 
+
 class Dataset:
     
     _class_version = '2.0'
     
-    def __init__(self, directory):
+    def __init__(self, directory, config_list):
         
         self.directory = Path(directory)
         self._version = self._class_version
+        self._make_index(config_list)
         
-    def make_index(self, config_list):
+    def _make_index(self, config_list):
         """Create the index dictionary.
         
         Parameters

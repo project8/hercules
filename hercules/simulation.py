@@ -193,8 +193,7 @@ class AbstractKassLocustP3(ABC):
         
     def make_index(self, config_list):
         
-        dataset = Dataset(self._working_dir)
-        dataset.make_index(config_list)
+        dataset = Dataset(self._working_dir, config_list)
         dataset.dump()
     
     @abstractmethod
