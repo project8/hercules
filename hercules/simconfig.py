@@ -1191,7 +1191,10 @@ class SimConfig:
         acq_rate = self._locust_config._config_dict[LocustConfig._sim_key].get(LocustConfig._acq_rate_key)
         lo_f = self._locust_config._config_dict[LocustConfig._array_signal_key].get(LocustConfig._lo_frequency_key)
 
-        meta_data = {'trap': self._kass_config._config_dict['geometry']}
+        meta_data = {}
+        meta_data.update(self._extra_meta_data)
+
+        meta_data.update({'trap': self._kass_config._config_dict['geometry']})
 
         if tf_file_name is not None:
             meta_data.update({'transfer-function': tf_file_name})
@@ -1204,8 +1207,6 @@ class SimConfig:
 
         if lo_f is not None:
             meta_data.update({'lo-frequency': lo_f})
-        
-        meta_data.update(self._extra_meta_data)
         
         return meta_data
     
