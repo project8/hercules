@@ -118,6 +118,34 @@ class Dataset:
         
         return parameters, self.directory / sim_path
     
+    def __iter__(self):
+        self._it_index = tuple(0 for i in range(len(self.shape)))
+        self._it_stop = False
+        return self
+
+    def __next__(self):
+
+        if not self._it_stop:
+
+            new_index = list(self._it_index)
+
+            for i in reversed(range(len(self._it_index))):
+                new_index[i] += 1
+                if new_index[i] == self.shape[i]:
+                    new_index[i] = 0
+                else:
+                    break
+
+            old_index = self._it_index
+            self._it_index = tuple(new_index)
+
+            if self._it_index == tuple(0 for i in range(len(self.shape))):
+                self._it_stop = True
+
+            return self.get_path(old_index, method='index')
+        else:
+            raise StopIteration
+    
     @property
     def config_data_keys(self):
         return self._config_data_keys
