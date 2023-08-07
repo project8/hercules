@@ -94,7 +94,7 @@ class Dataset:
         
         return parameters, self.load_sim(path)
         
-    def load_sim(self, path):
+    def _load_sim(self, path):
         return np.load(self._directory / path / PY_DATA_NAME)
         
     def get_path(self, params, method='interpolated'):
