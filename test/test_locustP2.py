@@ -6,12 +6,15 @@ Date: Apr 29, 2021
 
 """
 
-import hercules as he
+from hercules import KassLocustP3, ConfigList, SimConfig
 from pathlib import Path
 import numpy as np
 import unittest
+import shutil
 
 module_dir = Path(__file__).parent.absolute()
+test_dataset_name = 'working_directory'
+test_path = module_dir / test_dataset_name
 
 class LocustP2Test(unittest.TestCase):
     def setUp(self) -> None:
@@ -20,19 +23,15 @@ class LocustP2Test(unittest.TestCase):
         theta_range = np.linspace(89.7, 90.0, 2)
         r_phi_range = np.linspace(0, 2 * np.pi, 1)
 
-        config_list = []
-        sim = he.KassLocustP3(str(module_dir) + '/out_test_locust_P2')
+        sim = KassLocustP3(test_path)
+        configlist = ConfigList(acquisition_rate=1., info='hello', trap='nonsense')
         
         for theta in theta_range:
             for r_phi in r_phi_range:
                 for r in r_range:
                     x = r * np.cos(r_phi)
                     y = r * np.sin(r_phi)
-                    r_phi_deg = np.rad2deg(r_phi)
-                    name = "Sim_theta_{:.4f}_R_{:.4f}_phi_{:.4f}".format(
-                        theta, r, r_phi_deg)
-                    config = he.SimConfig(
-                        name,
+                    config = SimConfig(
                         phase = 'Phase2',
                         seed_locust=42,
                         seed_kass=43,
@@ -49,14 +48,26 @@ class LocustP2Test(unittest.TestCase):
                         record_size=3000,
                         v_range=3.0e-6,
                         geometry='Trap_3.xml')
-                    config_list.append(config)
+                    configlist.add_config(config)
         
-        sim(config_list)
+        sim(configlist)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(test_path)
 
     def test_locust(self) -> None:
-        # Test sim generation (done in setUp), substitutes regular locust test
-        # This test is always true.
-        self.assertTrue(True)
+
+        paths =[test_path / 'index.he',
+                test_path / 'info.txt',
+                test_path / 'run0' / 'simulation.egg',
+                test_path / 'run1' / 'simulation.egg',
+                test_path / 'run2' / 'simulation.egg',
+                test_path / 'run3' / 'simulation.egg'
+                ]
+        
+        for path in paths:
+            self.assertTrue(path.exists())
+                
 
 if __name__ == '__main__':
     unittest.main()
