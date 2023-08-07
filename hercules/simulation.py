@@ -8,7 +8,7 @@ Date: February 19, 2021
 
 __all__ = ['KassLocustP3']
 
-from pathlib import Path, PosixPath
+from pathlib import Path, PurePosixPath
 import subprocess
 from abc import ABC, abstractmethod
 import concurrent.futures as cf
@@ -16,7 +16,7 @@ from tqdm import tqdm
 from math import sqrt, atan2
 import pickle
 
-from hercules.simconfig import SimConfig
+from hercules.simconfig import ConfigList, SimpleSimConfig
 from .dataset import Dataset
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME, KASS_CONFIG_NAME, SIM_CONFIG_NAME, 
@@ -160,8 +160,8 @@ class AbstractKassLocustP3(ABC):
     """An abstract base class for all KassLocust simulations."""
         
     #configuration parameters
-    _p8_locust_dir = PosixPath(CONFIG.locust_path) / CONFIG.locust_version
-    _p8_compute_dir = PosixPath(CONFIG.p8compute_path) / CONFIG.p8compute_version
+    _p8_locust_dir = PurePosixPath(CONFIG.locust_path) / CONFIG.locust_version
+    _p8_compute_dir = PurePosixPath(CONFIG.p8compute_path) / CONFIG.p8compute_version
         
     def __init__(self, working_dir, use_locust=True, use_kass=False,
                         python_script=None, direct=True):
@@ -184,17 +184,16 @@ class AbstractKassLocustP3(ABC):
         
         Parameters
         ----------
-        config_list : list
-            A list of SimConfig objects
+        config_list : ConfigList
+            A ConfigList object
         """
         
         self.make_index(config_list)
-        self.run(config_list, **kwargs)
+        self.run(config_list.get_internal_list(), **kwargs)
         
     def make_index(self, config_list):
         
-        dataset = Dataset(self._working_dir)
-        dataset.make_index(config_list)
+        dataset = Dataset(self._working_dir, config_list)
         dataset.dump()
     
     @abstractmethod
@@ -248,7 +247,7 @@ class AbstractKassLocustP3(ABC):
 class KassLocustP3Desktop(AbstractKassLocustP3):
     """A class for running KassLocust on a desktop."""
     
-    _working_dir_container = PosixPath('/') / 'workingdir'
+    _working_dir_container = PurePosixPath('/') / 'workingdir'
     _command_script_name = 'locustcommands.sh'
     _container = CONFIG.container
     _max_workers = int(CONFIG.desktop_parallel_jobs)
@@ -286,7 +285,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
             for future in tqdm(cf.as_completed(futures), total=len(futures)):
                 future.result()
     
-    def _submit(self, sim_config: SimConfig):
+    def _submit(self, sim_config):
         #Submit the job with the given SimConfig
         #Creates all the necessary configuration files, directories and the
         #json output
@@ -298,8 +297,13 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         kass_file = output_dir / KASS_CONFIG_NAME
         config_dump = output_dir / SIM_CONFIG_NAME
 
-        sim_config.make_config_file(locust_file, kass_file)
         sim_config.to_json(config_dump)
+
+        if self._use_locust:
+            sim_config.make_locust_config_file(locust_file, kass_file)
+
+        if self._use_kass:
+            sim_config.make_kass_config_file(kass_file)
         
         if self._use_locust or self._use_kass:
             self._gen_command_script(output_dir)
@@ -430,6 +434,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         module = 'module load dSQ;'
         
         n_cpus = 2 if self._use_locust else 1
+        n_cpus = n_cpus if 'n_cpus' not in kwargs else kwargs['n_cpus']
         memory = CONFIG.job_memory if 'memory' not in kwargs else kwargs['memory']
         timelimit = CONFIG.job_timelimit if 'timelimit' not in kwargs else kwargs['timelimit']
         
@@ -459,8 +464,16 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         kass_file = output_dir / KASS_CONFIG_NAME
         config_dump = output_dir / SIM_CONFIG_NAME
 
-        sim_config.make_config_file(locust_file, kass_file)
         sim_config.to_json(config_dump)
+
+        if self._use_locust:
+            sim_config.make_locust_config_file(locust_file, kass_file)
+
+        if self._use_kass:
+            sim_config.make_kass_config_file(kass_file)
+        
+        if self._use_locust or self._use_kass:
+            self._gen_locust_script(output_dir)
         
         self._gen_locust_script(output_dir)
         cmd = self._assemble_command(output_dir)
@@ -559,6 +572,9 @@ class KassLocustP3:
         working_dir : str
             The string for the path to the working directory
         """
+
+        self._use_locust = use_locust
+        self._use_kass = use_kass
         
         self._kass_locust = AbstractKassLocustP3.factory(CONFIG.env, 
                                                           working_dir,
@@ -574,7 +590,11 @@ class KassLocustP3:
         config_list : list or SimConfig
             Either a single SimConfig object or a list
         """
-        if type(config_list) is not list:
-            config_list = [config_list]
+        if type(config_list) is not ConfigList:
+            raise TypeError('Needs an instance of ConfigList')
+            
+        if config_list.get_list_type() is SimpleSimConfig and (self._use_kass or self._use_locust):
+            raise TypeError('SimpleSimConfig is not compatible with the use of Locust or Kassiopeia!')
+
         return self._kass_locust(config_list, **kwargs)
     

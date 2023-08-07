@@ -11,9 +11,8 @@ __all__ = ['SimConfig']
 import time
 import json
 import re
-from pathlib import Path, PosixPath
-from abc import ABC, abstractmethod
 from copy import deepcopy
+from math import sqrt, atan2
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME_P2, KASS_CONFIG_NAME_P2,
@@ -983,7 +982,7 @@ class SimConfig:
         Name of the simulation
     """
     
-    def __init__(self, sim_name, phase = 'Phase3', kass_file_name = None, 
+    def __init__(self, phase = 'Phase3', kass_file_name = None, 
                     kass_unknown_args_translation = {},
                     locust_file_name = None,
                     locust_unknown_args_translation = {}, **kwargs):
@@ -1036,8 +1035,9 @@ class SimConfig:
             If phase is not 'Phase2' or 'Phase3'.
         """
         
-        self._sim_name = sim_name
+        self._sim_name = None
         self._phase = phase
+        self._extra_meta_data = {}
         
         self._locust_config = LocustConfig(phase = phase, 
                                            locust_file_name = locust_file_name,
@@ -1084,6 +1084,10 @@ class SimConfig:
     def sim_name(self):
         return self._sim_name
     
+    @sim_name.setter
+    def sim_name(self, sim_name):
+        self._sim_name = sim_name
+    
     def to_json(self, file_name):
         """Write a json file with the entire simulation configuration."""
         
@@ -1126,10 +1130,10 @@ class SimConfig:
         with open(file_name, 'r') as infile:
             config = json.load(infile)
             
-            sim_name = config['sim-name']
             phase = config['phase']
             
-            instance = cls(sim_name, phase=phase)
+            instance = cls(phase=phase)
+            instance.sim_name = config['sim-name']
             
             instance._locust_config._config_dict = config['locust-config']
             instance._kass_config._config_dict = config['kass-config']
@@ -1154,8 +1158,18 @@ class SimConfig:
         print()
         print('Note that all keyword arguments are optional and take default values from the config files!')
         
-    def make_config_file(self, filename_locust, filename_kass):
-        """Create the final Kassiopeia and Locust config files.
+    def make_kass_config_file(self, filename_kass):
+        """Create the final Kassiopeia file.
+        
+        Parameters
+        ----------
+        filename_kass : str
+            the path to the output Kassiopeia config file
+        """
+        self._kass_config.make_config_file(filename_kass)
+
+    def make_locust_config_file(self, filename_locust, filename_kass):
+        """Create the final Locust config file.
         
         Parameters
         ----------
@@ -1164,7 +1178,247 @@ class SimConfig:
         filename_kass : str
             the path to the output Kassiopeia config file
         """
-        
         self._locust_config.set_xml(filename_kass)
         self._locust_config.make_config_file(filename_locust)
-        self._kass_config.make_config_file(filename_kass)
+
+    def get_meta_data(self):
+        
+        #maybe incomplete
+        #add more when you realize you need more metadata
+
+        tf_file_name = self._locust_config._config_dict[LocustConfig._array_signal_key].get(LocustConfig._tf_receiver_filename_key)
+        n_channels = self._locust_config._config_dict[LocustConfig._sim_key].get(LocustConfig._n_channels_key)
+        acq_rate = self._locust_config._config_dict[LocustConfig._sim_key].get(LocustConfig._acq_rate_key)
+        lo_f = self._locust_config._config_dict[LocustConfig._array_signal_key].get(LocustConfig._lo_frequency_key)
+
+        meta_data = {}
+        meta_data.update(self._extra_meta_data)
+
+        meta_data.update({'trap': self._kass_config._config_dict['geometry']})
+
+        if tf_file_name is not None:
+            meta_data.update({'transfer-function': tf_file_name})
+
+        if n_channels is not None:
+            meta_data.update({'n-channels': n_channels})
+
+        if acq_rate is not None:
+            meta_data.update({'acquisition-rate': acq_rate})
+
+        if lo_f is not None:
+            meta_data.update({'lo-frequency': lo_f})
+        
+        return meta_data
+    
+    def add_meta_data(self, meta_data):
+        self._extra_meta_data = meta_data
+    
+    def get_config_data(self):
+        
+        config_data = {}
+
+        x_min = self._kass_config._config_dict['x_min']
+        y_min = self._kass_config._config_dict['y_min']
+        z_min = self._kass_config._config_dict['z_min']
+        pitch_min = self._kass_config._config_dict['theta_min']
+
+        x_max = self._kass_config._config_dict['x_max']
+        y_max = self._kass_config._config_dict['y_max']
+        z_max = self._kass_config._config_dict['z_max']
+        pitch_max = self._kass_config._config_dict['theta_max']
+
+        energy = self._kass_config._config_dict['energy']
+        
+        r_min = sqrt(x_min**2 + y_min**2)
+        phi_min = atan2(y_min, x_min)
+
+        r_max = sqrt(x_max**2 + y_max**2)
+        phi_max = atan2(y_max, x_max)
+
+        if x_min==x_max and y_min==y_max and z_min==z_max and pitch_min==pitch_max:
+            config_data['r'] = r_min
+            config_data['phi'] = phi_min
+            config_data['z'] = z_min
+            config_data['pitch'] = pitch_min
+        else:
+            config_data['r_min'] = r_min
+            config_data['phi_min'] = phi_min
+            config_data['z_min'] = z_min
+            config_data['pitch_min'] = pitch_min
+            config_data['r_max'] = r_max
+            config_data['phi_max'] = phi_max
+            config_data['z_max'] = z_max
+            config_data['pitch_max'] = pitch_max
+
+        config_data['energy'] = energy
+
+        return config_data
+
+
+class SimpleSimConfig:
+    """A class for a more general simulation configuration
+    
+    This class is intended for the use with more general python scripts.
+    It supports an arbitrary number of keyword arguments. Arguments with the prefix 'meta_'
+    are treated as meta parameters. Meta parameters are expected to be the same for an entire dataset.
+    All other parameters are considered regular configuration parameters that should vary over a dataset.
+    
+    Attributes
+    ----------
+    sim_name : str
+        Name of the simulation
+    """
+    
+    def __init__(self, **kwargs):
+        """
+        Parameters
+        ----------
+        sim_name : str
+            Name of the simulation
+        **kwargs :
+            Arbitrary number of keyword arguments.
+        
+        """
+        
+        self._sim_name = None
+        self._extract_kwargs(kwargs)
+
+    def _extract_kwargs(self, kwargs):
+
+        self._meta_data = {}
+        self._config_data = {}
+        #for e in kwargs:
+        #    if e.startswith('meta_'):
+        #        new_key = e.removeprefix('meta_')
+        #        self._meta_data[new_key] = kwargs[e]
+        #    else:
+        #        self._config_data[e] = kwargs[e]
+        self._config_data = kwargs
+    
+    @property
+    def sim_name(self):
+        return self._sim_name
+    
+    @sim_name.setter
+    def sim_name(self, sim_name):
+        self._sim_name = sim_name
+    
+    def to_json(self, file_name):
+        """Write a json file with the entire simulation configuration."""
+        
+        with open(file_name, 'w') as outfile:
+            json.dump({ 'sim-name': self._sim_name,
+                        'meta-data': self._meta_data, 
+                        'config-data': self._config_data}, outfile, 
+                        indent=2)#, default=lambda x: x.config_dict)
+ 
+                            
+    def to_dict(self):
+        """Return a dictionary with the entire simulation configuration.
+        
+        Returns
+        -------
+        dict
+            Nested dictionary with the simulation configuration
+        """
+        
+        return {'sim-name': self._sim_name,
+                'meta-data': self._meta_data, 
+                'config-data': self._config_data}
+            
+    @classmethod
+    def from_json(cls, file_name):
+        """Return a SimpleSimConfig from a json file.
+        
+        Creates a new instance of a SimpleSimConfig from the contents of a json file.
+        This should only be used with a json file that was created by the 
+        `to_json` method. No checks applied for the validity of the json file.
+        
+        Returns
+        -------
+        SimpleSimConfig
+            The new SimpleSimConfig instance
+        """
+        
+        with open(file_name, 'r') as infile:
+            config = json.load(infile)
+            
+            instance = cls()
+            instance.sim_name = config['sim-name']            
+            instance._meta_data = config['meta-data']
+            instance._config_data = config['config-data']
+            
+        return instance
+    
+    @classmethod
+    def help(cls):
+        """Print documentation about the SimConfig.
+        
+        Prints the docstrings of the class and the __init__ method as well as
+        additional information about the accepted parameters in the keyword
+        arguments. The latter is provided via the two wrapped configurations.
+        
+        """
+        print(cls.__doc__)
+        print(cls.__init__.__doc__)
+
+    def get_meta_data(self):
+        return self._meta_data
+    
+    def get_config_data(self):
+        return self._config_data
+    
+    def add_meta_data(self, meta_data):
+        self._meta_data = meta_data
+
+
+class ConfigList:
+
+    def __init__(self, **kwargs):
+        self._config_list = []
+        self._meta_data = kwargs
+        self._extra_meta_data = None
+        self._config_list_type = None
+        self._config_data_keys = None
+
+    def add_config(self, config):
+
+        n = len(self._config_list)
+
+        if n == 0:
+
+            common_keys = set(self._meta_data.keys()).intersection(config.get_meta_data().keys())
+
+            if len(common_keys)>0:
+                print('Warning, adding a config with metadata that overwrites an existing metadata entry! This might not be what you want.')
+
+            self._extra_meta_data = config.get_meta_data()
+            self._meta_data.update(config.get_meta_data())
+            self._config_list_type = type(config)
+            self._config_data_keys = config.get_config_data().keys()
+
+        if type(config) is not self._config_list_type:
+            raise TypeError('All configurations in the configuration list have to be of the same type!')
+        
+        if config.get_meta_data() != self._extra_meta_data:
+            raise RuntimeError('All configurations in the configuration list need the same metadata')
+        
+        if config.get_config_data().keys() != self._config_data_keys:
+            raise RuntimeError('All configurations in the configuration list need the same configuration data keys')
+
+        config.add_meta_data(self._meta_data)
+        config.sim_name = f'run{n}'
+        self._config_list.append(config)
+
+    def get_internal_list(self):
+        return self._config_list
+    
+    def get_list_type(self):
+        return self._config_list_type
+
+    def get_meta_data(self):
+        return self._meta_data
+    
+    def get_config_data_keys(self):
+        return self._config_data_keys
+
