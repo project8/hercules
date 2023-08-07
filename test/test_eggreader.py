@@ -1,6 +1,6 @@
 """
 
-Author: Mingyu (Charles) Li
+Author: Mingyu (Charles) Li, Florian Thomas
 Date: Apr. 12, 2021
 
 """
@@ -10,39 +10,43 @@ from pathlib import Path
 
 from matplotlib.figure import Figure
 
-FILE_DIR = Path(__file__).parent.absolute()
-
 import matplotlib
 import unittest
-import hercules as he
+from hercules import KassLocustP3, SimConfig, ConfigList, Dataset, LocustP3File
 import numpy as np
 import matplotlib.pyplot as plt
+import shutil
 
-matplotlib.use("Agg")  # No GUI
+#matplotlib.use("Agg")  # No GUI
+
+module_dir = Path(__file__).parent.absolute()
+test_dataset_name = 'egg_reader_test'
+test_path = module_dir / test_dataset_name
+egg_filename = 'simulation.egg'
 
 
 class EggReaderTest(unittest.TestCase):
-    def setUp(self) -> None:
+
+    @classmethod
+    def setUpClass(cls) -> None:
         n_ch = 3
         r_range = np.linspace(0.000, 0.010, 1)
-        theta_range = np.linspace(85.0, 90.0, 1)
+        theta_range = np.linspace(85.0, 90.0, 2)
         r_phi_range = np.linspace(0, 2 * np.pi / n_ch, 1)
 
-        test_data_dict = {}
+        sim = KassLocustP3(test_path, use_kass=True, use_locust=True)
+        configlist = ConfigList()
+        
         for theta in theta_range:
             for r_phi in r_phi_range:
                 for r in r_range:
                     x = r * np.cos(r_phi)
                     y = r * np.sin(r_phi)
-                    r_phi_deg = np.rad2deg(r_phi)
-                    name = "Sim_theta_{:.4f}_R_{:.4f}_phi_{:.4f}".format(
-                        theta, r, r_phi_deg)
-                    config = he.SimConfig(
-                        name,
+                    config = SimConfig(
                         n_channels=n_ch,
                         seed_locust=42,
                         seed_kass=43,
-                        egg_filename="simulation.egg",
+                        egg_filename=egg_filename,
                         x_min=x,
                         x_max=x,
                         y_min=y,
@@ -57,44 +61,41 @@ class EggReaderTest(unittest.TestCase):
                         lo_frequency=25.8881e9,
                         acq_rate=250.0,
                         geometry='FreeSpaceGeometry_V00_00_10.xml')
-                    test_data_dict[name] = config
+                    configlist.add_config(config)
 
-        self.test_data_dict = test_data_dict
+        sim(configlist)
 
-        # Check if the test dir exists and names are correct
-        self.test_data_dir = test_data_dir = FILE_DIR / "test_dir"
-        test_data_dir.mkdir(exist_ok=True)
-        sub_dir_list = [
-            d.parts[-1] for d in test_data_dir.iterdir() if d.is_dir()
-        ]
-        missing_dir_list = list(
-            set(self.test_data_dict.keys()) - set(sub_dir_list))
-        print(
-            "The following test data are missing: {}".format(missing_dir_list))
+        cls.dataset = Dataset.load(test_path)
 
-        # Create missing test data
-        # Note: if data is missing, must run the tests in cmd line to create the data
-        if len(missing_dir_list) != 0:
-            print("Creating missing data...")
-            missing_data_config = [test_data_dict[l] for l in missing_dir_list]
-            sim = he.KassLocustP3(str(test_data_dir))
-            sim(missing_data_config)
+    @classmethod
+    def tearDownClass(cls) -> None:
+        pass
+        #shutil.rmtree(test_path)
 
-    def test_locust(self) -> None:
-        # Test sim generation (done in setUp), substitutes regular locust test
-        # This test is always true.
-        self.assertTrue(True)
+    def test_0(self) -> None:
+
+        paths =[test_path / 'index.he',
+                test_path / 'info.txt',
+                test_path / 'run0' / 'simulation.egg',
+                test_path / 'run1' / 'simulation.egg'
+                ]
+        print('Testing simulation successful')
+        for path in paths:
+            self.assertTrue(path.exists())
 
     def test_ts_stream(self) -> None:
-        for k in self.test_data_dict.keys():
-            self._load_ts_stream(k)
-            self._quick_load_ts_stream(k)
+        for _, path in self.dataset:
+            print(path)
+            self._load_ts_stream(path)
+            self._quick_load_ts_stream(path)
+
+        ok = input('Plots look ok? (y/n): ').lower().strip() == 'y'
+        self.assertTrue(ok)
 
     def _load_ts_stream(self, name) -> None:
         # Plot some specific test data
-        file_name = self.test_data_dir.joinpath(name).joinpath(
-            "simulation.egg")
-        file = he.LocustP3File(str(file_name))
+
+        file = LocustP3File(str(name / egg_filename))
         n_streams = file.n_streams
 
         for s in range(n_streams):
@@ -122,13 +123,12 @@ class EggReaderTest(unittest.TestCase):
             ax.set_xlabel(r"Time $[s]$")
             ax.set_ylabel(r"DAQ V $[V]$")
             ax.legend(loc="best")
-            self._save_fig(fig, title)
+            #self._save_fig(fig, f'{name}/plot_{s}.pdf', title)
+            plt.show()
 
     def _quick_load_ts_stream(self, name) -> None:
         # Plot some specific test data
-        file_name = self.test_data_dir.joinpath(name).joinpath(
-            "simulation.egg")
-        file = he.LocustP3File(str(file_name))
+        file = LocustP3File(str(name / egg_filename))
         n_streams = file.n_streams
         n_ch = file.n_channels
 
@@ -159,18 +159,21 @@ class EggReaderTest(unittest.TestCase):
             ax.set_xlabel(r"Time $[s]$")
             ax.set_ylabel(r"DAQ V $[V]$")
             ax.legend(loc="best")
-            self._save_fig(fig, title)
+            #self._save_fig(fig, f'{name}/plot_quick_{s}.pdf', title)
+            plt.show()
 
     def test_fft_stream(self) -> None:
-        for k in self.test_data_dict.keys():
-            self._load_fft_stream(k)
-            self._quick_load_fft_stream(k)
+        for _, path in self.dataset:
+            print(path)
+            self._load_fft_stream(path)
+            self._quick_load_fft_stream(path)
+
+        ok = input('Plots look ok? (y/n): ').lower().strip() == 'y'
+        self.assertTrue(ok)
 
     def _load_fft_stream(self, name) -> None:
-        # Plot some specific test data
-        file_name = self.test_data_dir.joinpath(name).joinpath(
-            "simulation.egg")
-        file = he.LocustP3File(str(file_name))
+
+        file = LocustP3File(str(name / egg_filename))
         n_streams = file.n_streams
 
         for s in range(n_streams):
@@ -192,13 +195,12 @@ class EggReaderTest(unittest.TestCase):
             ax.set_xlabel(r"Frequency $[Hz]$")
             ax.set_ylabel(r"FFT")
             ax.legend(loc="best")
-            self._save_fig(fig, title)
+            #self._save_fig(fig, title)
+            plt.show()
 
     def _quick_load_fft_stream(self, name) -> None:
         # Plot some specific test data
-        file_name = self.test_data_dir.joinpath(name).joinpath(
-            "simulation.egg")
-        file = he.LocustP3File(str(file_name))
+        file = LocustP3File(str(name / egg_filename))
         n_streams = file.n_streams
         n_ch = file.n_channels
 
@@ -225,9 +227,10 @@ class EggReaderTest(unittest.TestCase):
             ax.set_xlabel(r"Frequency $[Hz]$")
             ax.set_ylabel(r"FFT")
             ax.legend(loc="best")
-            self._save_fig(fig, title)
+            #self._save_fig(fig, title)
+            plt.show()
 
-    def _save_fig(self, fig: Figure, title: str = None) -> None:
+    def _save_fig(self, fig: Figure, out_file: str, title: str = None) -> None:
         # Saves the figure to data/images with title and closes the figure.
         # Default title to axes title if there's only one axes
         if title is None:
@@ -236,11 +239,8 @@ class EggReaderTest(unittest.TestCase):
                 title = ax_list[0].get_title()
             else:
                 raise ValueError("title cannot be None")
-        out_file = os.path.join(
-            str(self.test_data_dir),
-            title.replace(' ', '_').replace('.', '-') + ".pdf")
         fig.savefig(out_file, bbox_inches='tight', dpi=300)
-        plt.close(fig)
+        plt.close(fig) 
 
 
 if __name__ == '__main__':
