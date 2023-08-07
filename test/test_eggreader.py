@@ -69,8 +69,7 @@ class EggReaderTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        pass
-        #shutil.rmtree(test_path)
+        shutil.rmtree(test_path)
 
     def test_0(self) -> None:
 
