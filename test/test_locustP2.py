@@ -23,7 +23,7 @@ class LocustP2Test(unittest.TestCase):
         theta_range = np.linspace(89.7, 90.0, 2)
         r_phi_range = np.linspace(0, 2 * np.pi, 1)
 
-        sim = KassLocustP3(test_path)
+        sim = KassLocustP3(test_path, use_kass=True, use_locust=True)
         configlist = ConfigList(acquisition_rate=1., info='hello', trap='nonsense')
         
         for theta in theta_range:
