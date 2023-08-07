@@ -14,7 +14,8 @@ required = [
     "h5py",
     "numpy",
     "scipy",
-    "tqdm"
+    "tqdm",
+    "dill"
 ]
 
 setuptools.setup(
