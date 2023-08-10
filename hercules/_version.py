@@ -688,5 +688,32 @@ def get_versions() -> Dict[str, Any]:
 
 
 def get_hexbug_commit_version():
-    hexbug = git.Repo(_hexbug_dir)
-    return hexbug.head.object.hexsha
+    return get_git_commit_version(_hexbug_dir)
+
+def get_python_dir_commit_version():
+    from .constants import CONFIG
+    python_dir = Path(CONFIG.python_script_path)
+    return get_git_commit_version(python_dir)
+
+def is_git_repo(path):
+    try:
+        _ = git.Repo(path).git_dir
+        return True
+    except git.exc.InvalidGitRepositoryError:
+        return False
+    
+def is_dirty_or_untracked(repo):
+    return repo.is_dirty() or len(repo.untracked_files)>0
+    
+def get_git_commit_version(path):
+
+    if not is_git_repo(path):
+        return ''
+
+    repo = git.Repo(path)
+    hash = repo.head.object.hexsha
+
+    if is_dirty_or_untracked(repo):
+        hash += '-dirty/untracked'
+
+    return hash

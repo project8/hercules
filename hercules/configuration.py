@@ -46,6 +46,7 @@ class Configuration:
     def _handle_env(self, config):
 
         self._env = config['USER']['ENVIRONMENT']
+        self._python_script_path = config['USER']['PYTHON_SCRIPT_DIR']
 
         if self._env == 'desktop':
             self._container = config['DESKTOP']['CONTAINER']
@@ -65,6 +66,10 @@ class Configuration:
     @property
     def locust_path(self):
         return self._locust_path
+
+    @property
+    def python_script_path(self):
+        return self._python_script_path
 
     @property
     def p8compute_version(self):
