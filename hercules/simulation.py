@@ -13,8 +13,8 @@ import subprocess
 from abc import ABC, abstractmethod
 import concurrent.futures as cf
 from tqdm import tqdm
-from math import sqrt, atan2
-import pickle
+import platform
+os = platform.system()
 
 from hercules.simconfig import ConfigList, SimpleSimConfig
 from .dataset import Dataset
@@ -176,7 +176,7 @@ class AbstractKassLocustP3(ABC):
         self._use_kass= use_kass
         self._python_script= python_script
         self._python_script_name = python_script
-        self._python_script = None if python_script is None else HEXBUG_DIR / 'CRESana' / python_script
+        self._python_script = None if python_script is None else Path(CONFIG.python_script_path) / python_script
         self._working_dir=Path(working_dir)
         self._working_dir.mkdir(parents=True, exist_ok=True)
         
@@ -277,7 +277,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
             A list of SimConfig objects
         """
         
-        print('Running jobs in Locust')
+        print('Running jobs')
         with cf.ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             
             futures = [executor.submit(self._submit, sim_config) 
@@ -317,7 +317,8 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
         
         p.wait()
         #fix stty; for some reason the multithreading with docker breaks the shell
-        subprocess.Popen('stty sane', shell=True).wait()
+        if os!='Windows':
+            subprocess.Popen('stty sane', shell=True).wait()
         
     def _assemble_command(self, output_dir):
         #Assemble the docker command that runs the KassLocust simulation in the
