@@ -16,4 +16,4 @@ from . import _version
 from . import constants
 
 __version__ = _version.get_versions()['version']
-__hexbug_version__ = constants.HEXBUG_COMMIT
+__hexbug_version__ = _version.get_hexbug_commit_version()

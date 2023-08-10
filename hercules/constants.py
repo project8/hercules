@@ -9,14 +9,11 @@ Date: March 10, 2021
 __all__ = []
 
 from pathlib import Path, PurePosixPath
-import git
 
 from .configuration import Configuration
 
 MODULE_DIR = Path(__file__).parent.absolute()
 HEXBUG_DIR = MODULE_DIR / 'hexbug'
-hexbug = git.Repo(HEXBUG_DIR)
-HEXBUG_COMMIT = hexbug.head.object.hexsha
 #container is running linux
 #-> make sure it's PosixPath when run from windows
 HEXBUG_DIR_CONTAINER = PurePosixPath('/') / 'tmp'

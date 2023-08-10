@@ -18,6 +18,10 @@ import subprocess
 import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import functools
+import git
+from pathlib import Path
+
+_hexbug_dir = Path(__file__).parent.absolute() / 'hexbug'
 
 
 def get_keywords() -> Dict[str, str]:
@@ -681,3 +685,8 @@ def get_versions() -> Dict[str, Any]:
     return {"version": "0+unknown", "full-revisionid": None,
             "dirty": None,
             "error": "unable to compute version", "date": None}
+
+
+def get_hexbug_commit_version():
+    hexbug = git.Repo(_hexbug_dir)
+    return hexbug.head.object.hexsha
