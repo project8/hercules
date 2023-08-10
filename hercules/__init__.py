@@ -13,7 +13,8 @@ from .eggreader import LocustP3File
 from .dataset import Dataset
 
 from . import _version
+from . import _versionhelper
 
 __version__ = _version.get_versions()['version']
-__hexbug_version__ = _version.get_hexbug_commit_version()
-__python_script_version__ = _version.get_python_dir_commit_version()
+__hexbug_version__ = _versionhelper.get_hexbug_commit_version()
+__python_script_version__ = _versionhelper.get_python_dir_commit_version()
