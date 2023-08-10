@@ -1380,6 +1380,12 @@ class ConfigList:
         self._extra_meta_data = None
         self._config_list_type = None
         self._config_data_keys = None
+        self._add_version_metadata()
+
+    def _add_version_metadata(self):
+        from . import __hexbug_version__, __version__
+        self._meta_data['hercules-version'] = __version__
+        self._meta_data['hexbug-version'] = __hexbug_version__
 
     def add_config(self, config):
 
