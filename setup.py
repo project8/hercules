@@ -10,13 +10,8 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-required = [
-    "h5py",
-    "numpy",
-    "scipy",
-    "tqdm",
-    "dill"
-]
+with open("requirements.txt", "r") as fh:
+    required = [line.strip() for line in fh]
 
 setuptools.setup(
     name="hercules",
