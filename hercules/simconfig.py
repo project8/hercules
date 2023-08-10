@@ -13,6 +13,7 @@ import json
 import re
 from copy import deepcopy
 from math import sqrt, atan2
+from pathlib import Path
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME_P2, KASS_CONFIG_NAME_P2,
@@ -1383,9 +1384,12 @@ class ConfigList:
         self._add_version_metadata()
 
     def _add_version_metadata(self):
-        from . import __hexbug_version__, __version__
+        from . import __hexbug_version__, __version__, __python_script_version__
+        from .constants import CONFIG
         self._meta_data['hercules-version'] = __version__
         self._meta_data['hexbug-version'] = __hexbug_version__
+        self._meta_data['python-script-version'] = __python_script_version__
+        self._meta_data['python-script-dir'] = CONFIG.python_script_path
 
     def add_config(self, config):
 

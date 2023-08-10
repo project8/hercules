@@ -175,6 +175,7 @@ class AbstractKassLocustP3(ABC):
         self._use_locust= use_locust
         self._use_kass= use_kass
         self._python_script= python_script
+        self._python_script_name = python_script
         self._python_script = None if python_script is None else HEXBUG_DIR / 'CRESana' / python_script
         self._working_dir=Path(working_dir)
         self._working_dir.mkdir(parents=True, exist_ok=True)
@@ -581,6 +582,9 @@ class KassLocustP3:
                                                           use_locust=use_locust,
                                                           use_kass=use_kass,
                                                           python_script=python_script)
+        
+    def _add_python_script_metadata(self, config_list):
+        config_list.get_meta_data()['python-script'] = self._kass_locust._python_script_name
 
     def __call__(self, config_list, **kwargs):
         """Run a list of simulation jobs in parallel.
@@ -595,6 +599,8 @@ class KassLocustP3:
             
         if config_list.get_list_type() is SimpleSimConfig and (self._use_kass or self._use_locust):
             raise TypeError('SimpleSimConfig is not compatible with the use of Locust or Kassiopeia!')
+        
+        self._add_python_script_metadata(config_list)
 
         return self._kass_locust(config_list, **kwargs)
     
