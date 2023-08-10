@@ -171,6 +171,9 @@ class AbstractKassLocustP3(ABC):
         #prevents direct instantiation without using the factory
         if direct:
             raise ValueError('Direct instantiation forbidden')
+        
+        if (use_kass or use_locust) and os=='Windows':
+            raise NotImplementedError('Proper support of Docker is not implemented on Windows!')
             
         self._use_locust= use_locust
         self._use_kass= use_kass
@@ -316,8 +319,10 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
             p = subprocess.Popen(cmd, shell=True, stdout=log, stderr=err)
         
         p.wait()
-        #fix stty; for some reason the multithreading with docker breaks the shell
         if os!='Windows':
+            #fix stty; for some reason the multithreading with docker breaks the shell
+            #only if OS is not Windows. on windows command does not exist and so far
+            #hercules does not support docker on windows anyway
             subprocess.Popen('stty sane', shell=True).wait()
         
     def _assemble_command(self, output_dir):
