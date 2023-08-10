@@ -6,6 +6,7 @@ Date: February 17, 2021
 """
 
 import setuptools
+import versioneer
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -15,7 +16,8 @@ with open("requirements.txt", "r") as fh:
 
 setuptools.setup(
     name="hercules",
-    version="0.5.0",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     author="Florian Thomas, Mingyu (Charles) Li",
     author_email="fthomas@uni-mainz.de, mingyuli@mit.edu",
     description="https://github.com/project8/hercules",

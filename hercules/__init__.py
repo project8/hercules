@@ -10,3 +10,6 @@ from .simulation import KassLocustP3
 from .simconfig import SimConfig, SimpleSimConfig, ConfigList
 from .eggreader import LocustP3File
 from .dataset import Dataset
+
+from . import _version
+__version__ = _version.get_versions()['version']
