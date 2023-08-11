@@ -17,7 +17,6 @@ class PyJob:
 
     def __init__(self):
         args = sys.argv
-        print(args)
         path = Path(args[1]).absolute()
         os.chdir(path)
         self._config_dict = SimpleSimConfig.from_json('SimConfig.json').to_dict()
