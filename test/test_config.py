@@ -11,6 +11,8 @@ module_dir = Path(__file__).parent.absolute()
 
 import unittest
 from hercules import SimConfig, SimpleSimConfig, ConfigList
+import hercules
+from hercules.constants import CONFIG
 import numpy as np
 
 
@@ -228,7 +230,11 @@ class ConfigListTest(unittest.TestCase):
                     'trap': '[config_path]/Trap/FreeSpaceGeometry_V00_00_10.xml',
                     'transfer-function': '/tmp/Phase3/TransferFunctions/FiveSlotTF.txt',
                     'n-channels': 3,
-                    'lo-frequency': 25878100000.0}
+                    'lo-frequency': 25878100000.0,
+                    'hercules-version': hercules.__version__,
+                    'hexbug-version': hercules.__hexbug_version__,
+                    'python-script-version': hercules.__python_script_version__,
+                    'python-script-dir': CONFIG.python_script_path}
         
         self.assertEqual(expected, self.configlist.get_meta_data())
 
@@ -238,7 +244,11 @@ class ConfigListTest(unittest.TestCase):
         expected = {'acquisition_rate': 1.0,
                     'info': 'hello simple',
                     'trap': 'nonsense',
-                    'n_channels': 3}
+                    'n_channels': 3,
+                    'hercules-version': hercules.__version__,
+                    'hexbug-version': hercules.__hexbug_version__,
+                    'python-script-version': hercules.__python_script_version__,
+                    'python-script-dir': CONFIG.python_script_path}
         
         self.assertEqual(expected, self.configlist_simple.get_meta_data())
 
