@@ -25,7 +25,7 @@ def get_python_dir_commit_version():
 
 def is_git_repo(path):
     try:
-        _ = git.Repo(path).git_dir
+        _ = git.Repo(path, search_parent_directories=True).git_dir
         return True
     except git.exc.InvalidGitRepositoryError:
         return False
@@ -38,7 +38,7 @@ def get_git_commit_version(path):
     if not is_git_repo(path):
         return ''
 
-    repo = git.Repo(path)
+    repo = git.Repo(path, search_parent_directories=True)
     hash = repo.head.object.hexsha
 
     if is_dirty_or_untracked(repo):
