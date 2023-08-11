@@ -93,17 +93,18 @@ configlist.add_config(config)
 sim(configlist)
 ```
 
-Corresponding script head of `run_no_kass_no_locust.py`:
+Corresponding script head of `run_no_kass_no_locust.py`. The python job script now needs to create an instance of `PyJob` at the top which now also abstracts the path and loading of the config object.
 
 ```python
-from hercules import SimpleSimConfig
+from hercules import PyJob
 
-path = sys.argv[1]
-config = SimpleSimConfig.from_json(path + '/SimConfig.json').to_dict()
+job = PyJob()
+config_data = job.config_data
+meta_data = job.meta_data
 
 #get config parameters
-x = config['x']
-some_exotic_data_name = config['some_exotic_data_name']
+x = config_data['x']
+some_exotic_data_name = config_data['some_exotic_data_name']
 ```
 
 ## Running on grace cluster
