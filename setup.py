@@ -10,6 +10,8 @@ from setuptools import setup
 import setuptools
 from setuptools.command.build_py import build_py
 import versioneer
+import subprocess
+import glob
 
 from hercules import _versionhelper
 
@@ -17,6 +19,17 @@ class cmd_build_py(build_py):
 
     def run(self) -> None:
         _versionhelper.persist_hexbug_commit_version()
+
+        #pickle CRESana models
+        try:
+            import cresana
+            path = 'hercules/hexbug/Phase4/CRESana_models'
+            for file in glob.glob(path+'/*.py'):
+                subprocess.run(['python', file])
+
+        except:
+            print('Not installing CRESana models')
+
         build_py.run(self)
 
 
