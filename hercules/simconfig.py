@@ -1390,6 +1390,22 @@ class ConfigList:
         self._meta_data['hexbug-version'] = __hexbug_version__
         self._meta_data['python-script-version'] = __python_script_version__
         self._meta_data['python-script-dir'] = CONFIG.python_script_path
+        self._not_commited_warning()
+
+    def _not_commited_warning(self):
+        version_keys = ['hercules-version', 'hexbug-version', 'python-script-version']
+        uncommitted = False
+        for k in version_keys:
+            if self._meta_data[k].endswith('-dirty/untracked'):
+                uncommitted = True
+                print(f'WARNING! Uncomitted changes in {k.removesuffix("-version")}')
+        
+        if uncommitted:
+            print('Trying to run with uncommitted changes. This is dangerous for reproducibility!')
+            ok = input('Continue? (y/n): ').lower().strip() == 'y'
+            if not ok:
+                print('Aborting. Commit your work and try again :)')
+                exit()
 
     def add_config(self, config):
 
