@@ -1406,6 +1406,7 @@ class ConfigList:
             if not ok:
                 print('Aborting. Commit your work and try again :)')
                 exit()
+            print("You know what you're doing :)")
 
     def add_config(self, config):
 
