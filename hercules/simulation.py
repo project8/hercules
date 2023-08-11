@@ -13,8 +13,8 @@ import subprocess
 from abc import ABC, abstractmethod
 import concurrent.futures as cf
 from tqdm import tqdm
-from math import sqrt, atan2
-import pickle
+import platform
+os = platform.system()
 
 from hercules.simconfig import ConfigList, SimpleSimConfig
 from .dataset import Dataset
@@ -171,11 +171,15 @@ class AbstractKassLocustP3(ABC):
         #prevents direct instantiation without using the factory
         if direct:
             raise ValueError('Direct instantiation forbidden')
+        
+        if (use_kass or use_locust) and os=='Windows':
+            raise NotImplementedError('Proper support of Docker is not implemented on Windows!')
             
         self._use_locust= use_locust
         self._use_kass= use_kass
         self._python_script= python_script
-        self._python_script = None if python_script is None else HEXBUG_DIR / 'CRESana' / python_script
+        self._python_script_name = python_script
+        self._python_script = None if python_script is None else Path(CONFIG.python_script_path) / python_script
         self._working_dir=Path(working_dir)
         self._working_dir.mkdir(parents=True, exist_ok=True)
         
@@ -276,7 +280,7 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
             A list of SimConfig objects
         """
         
-        print('Running jobs in Locust')
+        print('Running jobs')
         with cf.ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             
             futures = [executor.submit(self._submit, sim_config) 
@@ -315,8 +319,11 @@ class KassLocustP3Desktop(AbstractKassLocustP3):
             p = subprocess.Popen(cmd, shell=True, stdout=log, stderr=err)
         
         p.wait()
-        #fix stty; for some reason the multithreading with docker breaks the shell
-        subprocess.Popen('stty sane', shell=True).wait()
+        if os!='Windows':
+            #fix stty; for some reason the multithreading with docker breaks the shell
+            #only if OS is not Windows. on windows command does not exist and so far
+            #hercules does not support docker on windows anyway
+            subprocess.Popen('stty sane', shell=True).wait()
         
     def _assemble_command(self, output_dir):
         #Assemble the docker command that runs the KassLocust simulation in the
@@ -581,6 +588,9 @@ class KassLocustP3:
                                                           use_locust=use_locust,
                                                           use_kass=use_kass,
                                                           python_script=python_script)
+        
+    def _add_python_script_metadata(self, config_list):
+        config_list.get_meta_data()['python-script'] = self._kass_locust._python_script_name
 
     def __call__(self, config_list, **kwargs):
         """Run a list of simulation jobs in parallel.
@@ -595,6 +605,8 @@ class KassLocustP3:
             
         if config_list.get_list_type() is SimpleSimConfig and (self._use_kass or self._use_locust):
             raise TypeError('SimpleSimConfig is not compatible with the use of Locust or Kassiopeia!')
+        
+        self._add_python_script_metadata(config_list)
 
         return self._kass_locust(config_list, **kwargs)
     

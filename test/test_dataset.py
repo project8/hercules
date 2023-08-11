@@ -7,6 +7,8 @@ Date: Aug 05, 2023
 """
 
 from hercules import SimpleSimConfig, Dataset, ConfigList
+import hercules
+from hercules.constants import CONFIG
 from pathlib import Path
 import unittest
 import numpy as np
@@ -47,7 +49,12 @@ class DatasetTest(unittest.TestCase):
         self.assertTrue(expected_result==self.d.shape)
 
     def test_meta_data(self) -> None:
-        expected_result = {'sr': 200.0, 'info': 'hello'}
+        expected_result = {'sr': 200.0, 
+                           'info': 'hello',
+                            'hercules-version': hercules.__version__,
+                            'hexbug-version': hercules.__hexbug_version__,
+                            'python-script-version': hercules.__python_script_version__,
+                            'python-script-dir': CONFIG.python_script_path}
         self.assertTrue(expected_result==self.d.meta_data)
 
     def test_get_path(self) -> None:

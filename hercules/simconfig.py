@@ -13,6 +13,7 @@ import json
 import re
 from copy import deepcopy
 from math import sqrt, atan2
+from pathlib import Path
 
 from .constants import (HEXBUG_DIR, HEXBUG_DIR_CONTAINER, OUTPUT_DIR_CONTAINER,
                         LOCUST_CONFIG_NAME_P2, KASS_CONFIG_NAME_P2,
@@ -1380,6 +1381,32 @@ class ConfigList:
         self._extra_meta_data = None
         self._config_list_type = None
         self._config_data_keys = None
+        self._add_version_metadata()
+
+    def _add_version_metadata(self):
+        from . import __hexbug_version__, __version__, __python_script_version__
+        from .constants import CONFIG
+        self._meta_data['hercules-version'] = __version__
+        self._meta_data['hexbug-version'] = __hexbug_version__
+        self._meta_data['python-script-version'] = __python_script_version__
+        self._meta_data['python-script-dir'] = CONFIG.python_script_path
+        self._not_commited_warning()
+
+    def _not_commited_warning(self):
+        version_keys = ['hercules-version', 'hexbug-version', 'python-script-version']
+        uncommitted = False
+        for k in version_keys:
+            if self._meta_data[k].endswith('-dirty/untracked'):
+                uncommitted = True
+                print(f'WARNING! Uncomitted changes in {k.removesuffix("-version")}')
+        
+        if uncommitted:
+            print('Trying to run with uncommitted changes. This is dangerous for reproducibility!')
+            ok = input('Continue? (y/n): ').lower().strip() == 'y'
+            if not ok:
+                print('Aborting. Commit your work and try again :)')
+                exit()
+            print("You know what you're doing :)")
 
     def add_config(self, config):
 
