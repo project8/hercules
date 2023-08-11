@@ -11,6 +11,7 @@ from .simulation import KassLocustP3
 from .simconfig import SimConfig, SimpleSimConfig, ConfigList
 from .eggreader import LocustP3File
 from .dataset import Dataset
+from .pyjob import PyJob
 
 from . import _version
 from . import _versionhelper
