@@ -444,10 +444,11 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         n_cpus = n_cpus if 'n_cpus' not in kwargs else kwargs['n_cpus']
         memory = CONFIG.job_memory if 'memory' not in kwargs else kwargs['memory']
         timelimit = CONFIG.job_timelimit if 'timelimit' not in kwargs else kwargs['timelimit']
+        partition = CONFIG.partition if 'partition' not in kwargs else kwargs['partition']
         
         dsq = f'dsq --requeue --cpus-per-task={n_cpus} --submit'
         job_file = '--job-file ' + str(self._joblist)
-        job_partition = '-p ' + CONFIG.partition
+        job_partition = '-p ' + partition
         job_limit = '--max-jobs ' + CONFIG.job_limit
         job_memory = '--mem-per-cpu ' + memory +'m'
         job_timelimit = '-t ' + timelimit
