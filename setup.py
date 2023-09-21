@@ -5,13 +5,14 @@ Date: February 17, 2021
 
 """
 
-from distutils.cmd import Command
+
 from setuptools import setup
 import setuptools
 from setuptools.command.build_py import build_py
 import versioneer
 import subprocess
-import glob
+from pathlib import Path
+import shutil
 
 from hercules import _versionhelper
 
@@ -23,9 +24,17 @@ class cmd_build_py(build_py):
         #pickle CRESana models
         try:
             import cresana
-            path = 'hercules/hexbug/Phase4/CRESana_models'
-            for file in glob.glob(path+'/*.py'):
-                subprocess.run(['python', file])
+            path = Path('hercules/hexbug/Phase4/CRESana_models')
+            paths_to_delete = [p for p in path.glob('*') if not p.suffix=='.py']
+
+            for p in paths_to_delete:
+                if p.is_file():
+                    p.unlink()
+                else:
+                    shutil.rmtree(p)
+            
+            for file in path.glob('*.py'):
+                subprocess.run(['python', str(file)])
 
         except:
             print('Not installing CRESana models')

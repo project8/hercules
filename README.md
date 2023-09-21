@@ -17,7 +17,7 @@ DESKTOP_PARALLEL_JOBS = 2
 PYTHON_SCRIPT_DIR = /some/directory
 ```
 
-As last step, run `pip install .` in the directory with setup.py. 
+**IMPORTANT**: As last step, run `python setup.py clean --all; pip install . ; python setup.py clean --all` in the directory with setup.py. This combined command is the safest way for installation in all situations. For further explanation: in theory `pip install .` is sufficient for a first installation after initially cloning the repo. **But** newer versions of pip create a `build` directory inside the repository and do not clean it up automatically after the installation. During development or when pulling new versions this directory can cause issues if it is not cleaned up after the installation. Therefore it is advised to adapt this installation routine in order to make sure no old build artifacts can mess with the installation process.
 
 Note: If you are using the system wide python environment (not recommended) instead of a virtual environment (e.g. with Anaconda) the package data will go to `/usr/local`, which causes access permission issues with Docker. As a workaround use `pip install -e .` which creates symlinks to the repo instead of copying files.
 
