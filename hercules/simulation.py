@@ -469,6 +469,17 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         print(out)
         self.jobid = int(re.findall(b"Submitted batch job (\d*)", out)[0])
 
+    def get_jobstatus(self, jobid=None):
+        if jobid is None:
+            jobid = self.jobid
+        cmd = "module load dSQ; dsqa -j %d"%jobid
+
+        proc = subprocess.Popen(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc.wait()
+        out, err = proc.communicate()
+
+        return {line.split()[0]: int(line.split()[1]) for line in err.strip().split("\n")[3:]}
+
         
     def _add_job(self, sim_config):
         
