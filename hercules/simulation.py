@@ -10,6 +10,7 @@ __all__ = ['KassLocustP3']
 
 from pathlib import Path, PurePosixPath
 import subprocess
+import re
 from abc import ABC, abstractmethod
 import concurrent.futures as cf
 from tqdm import tqdm
@@ -462,7 +463,12 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
                                 
         print(cmd)
         
-        subprocess.Popen(cmd, shell=True).wait()
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc.wait()
+        out, err = proc.communicate()
+        print(out)
+        self.jobid = int(re.findall(b"Submitted batch job (\d*)", out)[0])
+
         
     def _add_job(self, sim_config):
         
