@@ -184,8 +184,12 @@ class Dataset:
         return self._meta_data
         
     def dump(self):
-        with open(self._directory/'index.he', "wb") as f:
+        dir_tmp = self._directory
+        self._directory = None #do not dump full OS-dependent local path
+        with open(dir_tmp/'index.he', "wb") as f:
             pickle.dump(self, f, protocol=4)
+        
+        self._directory = dir_tmp
 
         with open(self._directory/'info.txt', "w") as f:
             f.write(f'Hercules dataset version {self._version}\n')
