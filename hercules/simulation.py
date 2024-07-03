@@ -180,7 +180,11 @@ class AbstractKassLocustP3(ABC):
         self._use_kass= use_kass
         self._python_script= python_script
         self._python_script_name = python_script
-        self._python_script = None if python_script is None else Path(CONFIG.python_script_path) / python_script
+        if python_script is not None:
+            if Path(python_script).is_absolute():
+                self._python_script = Path(python_script)
+            else:
+                self._python_script = Path(CONFIG.python_script_path) / python_script
         self._working_dir=Path(working_dir)
         self._working_dir.mkdir(parents=True, exist_ok=True)
         
