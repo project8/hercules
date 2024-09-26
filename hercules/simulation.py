@@ -215,7 +215,7 @@ class AbstractKassLocustP3(ABC):
         
     @staticmethod
     def factory(name, working_dir, use_locust=True, use_kass=False,
-                python_script=None):
+                python_script=None, **kwargs):
         """Return an instance of one of the derived classes.
         
         Parameters
@@ -240,11 +240,11 @@ class AbstractKassLocustP3(ABC):
         if name == 'grace':
             return KassLocustP3Cluster(working_dir, use_locust=use_locust,
                                         use_kass=use_kass,
-                                        python_script=python_script, direct=False)
+                                        python_script=python_script, direct=False, **kwargs)
         elif name == 'desktop':
             return KassLocustP3Desktop(working_dir, use_locust=use_locust,
                                         use_kass=use_kass,
-                                        python_script=python_script, direct=False)
+                                        python_script=python_script, direct=False, **kwargs)
         else:
             raise ValueError('Bad KassLocustP3 creation : ' + name)
 
@@ -397,7 +397,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
     _job_script_name = 'joblist%s.txt'
 
     def __init__(self, working_dir, use_locust=True, 
-                use_kass=False, python_script=None, direct=True):
+                use_kass=False, python_script=None, direct=True, virtual_env="hercules"):
         """
         Parameters
         ----------
@@ -408,6 +408,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
         AbstractKassLocustP3.__init__(self, working_dir, use_locust=use_locust,
                                         use_kass=use_kass,
                                         python_script=python_script, direct=direct)
+        self._virtual_env = virtual_env
         
     def run(self, config_list, **kwargs):
         """This method overrides :meth:`AbstractKassLocustP3.__call__`.
@@ -527,7 +528,7 @@ class KassLocustP3Cluster(AbstractKassLocustP3):
             cmd += singularity_cmd + ';' + check_failure + ';'
             
         if self._python_script is not None:
-            cmd += 'module load miniconda; conda activate hercules;'
+            cmd += 'module load miniconda; conda activate %s;'%(self._virtual_env)
             cmd += 'python ' + str(self._python_script) + ' ' + str(output_dir)
             
         log = '>' + str(output_dir) + '/log.out'
@@ -573,7 +574,7 @@ class KassLocustP3:
     """
     
     def __init__(self, working_dir, use_locust=True, use_kass=False,
-                python_script=None):
+                python_script=None, **kwargs):
         """
         Parameters
         ----------
@@ -588,7 +589,7 @@ class KassLocustP3:
                                                           working_dir,
                                                           use_locust=use_locust,
                                                           use_kass=use_kass,
-                                                          python_script=python_script)
+                                                          python_script=python_script, **kwargs)
         
     def _add_python_script_metadata(self, config_list):
         config_list.get_meta_data()['python-script'] = self._kass_locust._python_script_name
